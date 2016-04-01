@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	defaultReadWriteTimeout = time.Second * 5
+	DefaultReadWriteTimeout = time.Second * 30
 )
 
 var (
@@ -44,6 +44,7 @@ type Settings struct {
 	Login    string
 	Password string
 	Logger   *log.Logger
+	ReadWriteTimeout time.Duration // Timeout for read/write operations on the TCP stream.
 }
 
 // Client is a Deluge RPC client.
@@ -107,7 +108,7 @@ func (dr *DelugeResponse) String() string {
 
 func (c *Client) resetTimeout() error {
 	// set timeout
-	return c.conn.SetDeadline(time.Now().Add(defaultReadWriteTimeout))
+	return c.conn.SetDeadline(time.Now().Add(c.settings.ReadWriteTimeout))
 }
 
 func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictionary) (*DelugeResponse, error) {
@@ -211,6 +212,9 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 
 // New returns a Deluge client.
 func New(s Settings) *Client {
+	if s.ReadWriteTimeout == time.Duration(0) {
+		s.ReadWriteTimeout = DefaultReadWriteTimeout
+	}
 	return &Client{
 		settings: s,
 	}
