@@ -39,11 +39,11 @@ var (
 
 // Settings defines all settings for a Deluge client connection.
 type Settings struct {
-	Hostname string
-	Port     uint
-	Login    string
-	Password string
-	Logger   *log.Logger
+	Hostname         string
+	Port             uint
+	Login            string
+	Password         string
+	Logger           *log.Logger
 	ReadWriteTimeout time.Duration // Timeout for read/write operations on the TCP stream.
 }
 

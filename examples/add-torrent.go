@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gdm85/go-libdeluge"
 )
@@ -85,7 +86,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	deluge := delugeclient.New(delugeclient.Settings{host, port, username, password, logger})
+	deluge := delugeclient.New(delugeclient.Settings{host, port, username, password, logger, time.Duration(0)})
 
 	// perform connection to Deluge server
 	err = deluge.Connect()

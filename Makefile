@@ -13,4 +13,4 @@ bin/add-torrent: build
 clean:
 	rm -f bin/add-torrent
 
-.PHONY: build-all build clean bin/add-torrent
+.PHONY: build-all build clean
