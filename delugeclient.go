@@ -45,9 +45,12 @@ type DelugeClient interface {
 	MethodsList() ([]string, error)
 	DaemonVersion() (string, error)
 	GetFreeSpace(string) (int64, error)
-	AddTorrentMagnet(magnetURI string) (string, error)
+	AddTorrentMagnet(magnetURI string, options Options) (string, error)
+	AddTorrentURL(url string, options Options) (string, error)
 	DeleteTorrent(id string) (bool, error)
 	TorrentsStatus() (map[string]*TorrentStatus, error)
+	MoveStorage(torrentIDs []string, dest string) error
+	SessionState() ([]string, error)
 }
 
 type NativeDelugeClient interface {
@@ -63,6 +66,9 @@ type SerialMismatchError struct {
 func (e SerialMismatchError) Error() string {
 	return fmt.Sprintf("request/response serial id mismatch: got %d but %d expected", e.ReceivedID, e.ExpectedID)
 }
+
+// Options used when adding a torrent magnet/URL
+type Options map[string]interface{}
 
 // Settings defines all settings for a Deluge client connection.
 type Settings struct {
@@ -442,13 +448,58 @@ func (c *Client) GetFreeSpace(path string) (int64, error) {
 	return freeSpace, nil
 }
 
-// AddTorrentMagnet adds a torrent via magnet URI and returns the torrent hash.
-func (c *Client) AddTorrentMagnet(magnetURI string) (string, error) {
-	var args rencode.List
-	args.Add(magnetURI, rencode.Dictionary{})
+func mapToRencodeDictionary(m map[string]interface{}) rencode.Dictionary {
+	var dict rencode.Dictionary
+	if m != nil {
+		for k, v := range m {
+			dict.Add(k, v)
+		}
+	}
 
-	// perform login
+	return dict
+}
+
+func sliceToRencodeList(s []string) rencode.List {
+	var list rencode.List
+	for _, v := range s {
+		list.Add(v)
+	}
+
+	return list
+}
+
+// AddTorrentMagnet adds a torrent via magnet URI and returns the torrent hash.
+func (c *Client) AddTorrentMagnet(magnetURI string, options Options) (string, error) {
+	var args rencode.List
+	args.Add(magnetURI, mapToRencodeDictionary(options))
+
 	resp, err := c.rpc("core.add_torrent_magnet", args, rencode.Dictionary{})
+	if err != nil {
+		return "", err
+	}
+	if resp.IsError() {
+		return "", resp.RPCError
+	}
+
+	// returned hash may be nil if torrent was already added
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return "", ErrInvalidReturnValue
+	}
+	torrentHash := vals[0]
+	//TODO: is this nil comparison valid?
+	if torrentHash == nil {
+		return "", nil
+	}
+	return string(torrentHash.([]uint8)), nil
+}
+
+// AddTorrentURL adds a torrent via a URL and returns the torrent hash.
+func (c *Client) AddTorrentURL(url string, options Options) (string, error) {
+	var args rencode.List
+	args.Add(url, mapToRencodeDictionary(options))
+
+	resp, err := c.rpc("core.add_torrent_url", args, rencode.Dictionary{})
 	if err != nil {
 		return "", err
 	}
@@ -569,4 +620,41 @@ func (c *Client) DeleteTorrent(id string) (bool, error) {
 	success := vals[0]
 
 	return success.(bool), nil
+}
+
+func (c *Client) MoveStorage(torrentIDs []string, dest string) error {
+	var args rencode.List
+	args.Add(sliceToRencodeList(torrentIDs), dest)
+
+	resp, err := c.rpc("core.move_storage", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return err
+}
+
+func (c *Client) SessionState() ([]string, error) {
+	resp, err := c.rpc("core.get_session_state", rencode.List{}, rencode.Dictionary{})
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsError() {
+		return nil, resp.RPCError
+	}
+
+	var idList rencode.List
+	err = resp.returnValue.Scan(&idList)
+	if err != nil {
+		return []string{}, err
+	}
+	result := make([]string, idList.Length())
+	for i, m := range idList.Values() {
+		result[i] = string(m.([]byte))
+	}
+
+	return result, nil
 }

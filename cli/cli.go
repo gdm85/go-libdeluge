@@ -118,7 +118,7 @@ func main() {
 
 	// add each of the torrents
 	if addURI != `` {
-		torrentHash, err := deluge.AddTorrentMagnet(addURI)
+		torrentHash, err := deluge.AddTorrentMagnet(addURI, nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: could not add magnet URI '%s': %v\n", addURI, err)
 			os.Exit(5)
