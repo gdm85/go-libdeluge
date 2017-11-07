@@ -1,6 +1,6 @@
 /*
- * go-libdeluge v0.1.0 - a native deluge RPC client library
- * Copyright (C) 2015~2016 gdm85 - https://github.com/gdm85/go-libdeluge/
+ * go-libdeluge v0.2.0 - a native deluge RPC client library
+ * Copyright (C) 2015~2017 gdm85 - https://github.com/gdm85/go-libdeluge/
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -16,8 +16,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -32,6 +34,9 @@ var (
 	username, password string
 	logLevel           string
 
+	addURI       string
+	listTorrents bool
+
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
 )
 
@@ -45,23 +50,21 @@ func init() {
 	fs.StringVar(&password, "password", "", "Deluge password; use environment DELUGE_PASSWORD instead")
 	fs.StringVar(&logLevel, "log-level", "", "Log level, one of 'DEBUG' or 'NONE'")
 	fs.StringVar(&logLevel, "l", "", "Log level, one of 'DEBUG' or 'NONE' (shorthand)")
+
+	fs.StringVar(&addURI, "a", "", "Add a torrent via magnet URI")
+	fs.StringVar(&addURI, "add", "", "Add a torrent via magnet URI")
+
+	fs.BoolVar(&listTorrents, "e", false, "List all torrents")
+	fs.BoolVar(&listTorrents, "list", false, "List all torrents")
 }
 
 func main() {
 	err := fs.Parse(os.Args[1:])
 	if err != nil {
-		//		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
 		os.Exit(1)
 	}
 
-	// make sure there is at least one magnet URI specified after CLI flags
-	if fs.NArg() == 0 {
-		fs.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "ERROR: at least one magnet URI should be specified\n")
-		os.Exit(1)
-	}
-
-	// parse options via environment variables
+	// parse password via environment variable
 	for _, decl := range os.Environ() {
 		parts := strings.SplitN(decl, "=", 2)
 		if len(parts) != 2 {
@@ -76,17 +79,19 @@ func main() {
 
 	// validate log level
 	var logger *log.Logger
+	var debugIncoming bool
 	switch logLevel {
 	case "", "NONE":
 		// nothing to do
 	case "DEBUG":
 		logger = log.New(os.Stderr, "DELUGE: ", log.Lshortfile)
+		debugIncoming = true
 	default:
 		fmt.Fprintf(os.Stderr, "ERROR: invalid log level specified\n")
 		os.Exit(2)
 	}
 
-	deluge := delugeclient.New(delugeclient.Settings{host, port, username, password, logger, time.Duration(0)})
+	deluge := delugeclient.New(delugeclient.Settings{host, port, username, password, logger, time.Duration(0), debugIncoming})
 
 	// perform connection to Deluge server
 	err = deluge.Connect()
@@ -112,18 +117,44 @@ func main() {
 	fmt.Println("available methods:", methods)
 
 	// add each of the torrents
-	for i, magnetUri := range fs.Args() {
-		torrentHash, err := deluge.AddTorrentMagnet(magnetUri)
+	if addURI != `` {
+		torrentHash, err := deluge.AddTorrentMagnet(addURI)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "ERROR: could not add magnet URI '%s': %v\n", magnetUri, err)
+			fmt.Fprintf(os.Stderr, "ERROR: could not add magnet URI '%s': %v\n", addURI, err)
 			os.Exit(5)
 		}
 
 		if torrentHash == "" {
-			fmt.Printf("torrent #%d was not added\n", i)
+			fmt.Println("torrent was not added")
 		} else {
-			fmt.Printf("added torrent #%d with hash: %s\n", i, torrentHash)
+			fmt.Println("added torrent with hash:", torrentHash)
 		}
 
+	}
+
+	if listTorrents {
+		torrents, err := deluge.TorrentsStatus()
+
+		// store response for testing/development
+		count := len(deluge.DebugIncoming)
+		if count != 0 {
+			b := deluge.DebugIncoming[count-1]
+			fmt.Println("last call received", len(b))
+			err := ioutil.WriteFile("testlist.rnc", b, 0664)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "ERROR: could not write last call test data: %v\n", err)
+				os.Exit(5)
+			}
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: could not list all torrents: %v\n", err)
+			os.Exit(6)
+		}
+
+		b, err := json.MarshalIndent(torrents, "", "\t")
+		if err != nil {
+			os.Exit(7)
+		}
+		fmt.Println(string(b))
 	}
 }

@@ -19,13 +19,15 @@ make
 
 # How to use
 
-The library by itself is a Go package and needs to be embedded in an UI or CLI application.
-
-## Example: add-torrent
-The example add-torrent CLI program provided under [examples](https://github.com/gdm85/go-libdeluge/tree/master/examples) can be used to add a torrent magnet URI for download:
-
+The library by itself is a Go package and needs to be embedded in an UI or CLI application. An example CLI application is available through:
 ```
-DELUGE_PASSWORD="mypassword" bin/add-torrent magnet:?xt=urn:btih:C1939CA413B9AFCC34EA0CF3C128574E93FF6CB0&tr=http%3A%2F%2Ftorrent.ubuntu.com%3A6969%2Fannounce
+go get github.com/gdm85/go-libdeluge/delugecli
 ```
 
-This will start downloading the latest Ubuntu 14.04 LTS server ISO. Multiple magnet URIs are supported as command-line arguments; run `bin/add-torrent` alone to see all available options and their description.
+Example usage:
+
+```sh
+DELUGE_PASSWORD="mypassword" bin/delugecli -add magnet:?xt=urn:btih:C1939CA413B9AFCC34EA0CF3C128574E93FF6CB0&tr=http%3A%2F%2Ftorrent.ubuntu.com%3A6969%2Fannounce
+```
+
+This will start downloading the latest Ubuntu 14.04 LTS server ISO. Multiple magnet URIs are supported as command-line arguments; run `bin/delugecli` alone to see all available options and their description.

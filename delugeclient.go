@@ -1,6 +1,6 @@
 /*
- * go-libdeluge v0.1.0 - a native deluge RPC client library
- * Copyright (C) 2015~2016 gdm85 - https://github.com/gdm85/go-libdeluge/
+ * go-libdeluge v0.2.0 - a native deluge RPC client library
+ * Copyright (C) 2015~2017 gdm85 - https://github.com/gdm85/go-libdeluge/
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -21,8 +21,10 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math"
+	"net"
 	"time"
 
 	"github.com/gdm85/go-rencode"
@@ -34,43 +36,106 @@ const (
 
 var (
 	// ErrAlreadyClosed is returned when connection is already closed.
-	ErrAlreadyClosed = errors.New("connection is already closed")
+	ErrAlreadyClosed      = errors.New("connection is already closed")
+	ErrInvalidListResult  = errors.New("expected dictionary as list response")
+	ErrInvalidReturnValue = errors.New("invalid return value")
 )
+
+type SerialMismatchError struct {
+	ExpectedID int64
+	ReceivedID int64
+}
+
+func (e SerialMismatchError) Error() string {
+	return fmt.Sprintf("request/response serial id mismatch: got %d but %d expected", e.ReceivedID, e.ExpectedID)
+}
 
 // Settings defines all settings for a Deluge client connection.
 type Settings struct {
-	Hostname         string
-	Port             uint
-	Login            string
-	Password         string
-	Logger           *log.Logger
-	ReadWriteTimeout time.Duration // Timeout for read/write operations on the TCP stream.
+	Hostname              string
+	Port                  uint
+	Login                 string
+	Password              string
+	Logger                *log.Logger
+	ReadWriteTimeout      time.Duration // Timeout for read/write operations on the TCP stream.
+	DebugSaveInteractions bool
 }
 
 // Client is a Deluge RPC client.
 type Client struct {
-	settings Settings
-	conn     *tls.Conn
-	serial   int64
-	classID  int64
-}
-
-// RPCError is an error returned by RPC calls.
-type RPCError struct {
-	remoteMessage string
-}
-
-func (e RPCError) Error() string {
-	return e.remoteMessage
+	settings      Settings
+	conn          *tls.Conn
+	serial        int64
+	classID       int64
+	DebugIncoming [][]byte
 }
 
 type rpcResponseTypeID int
+
+type TorrentStatus struct {
+	NumSeeds            int64
+	Ratio               float32
+	Progress            float32 // max is 100
+	DistributedCopies   float32
+	TotalDone           int64
+	SeedingTime         int64
+	ETA                 int64
+	IsFinished          bool
+	NumPieces           int64
+	TrackerHost         string
+	PieceLength         int64
+	ActiveTime          int64
+	IsSeed              bool
+	NumPeers            int64
+	NextAnnounce        int64
+	Name                string
+	State               string
+	TotalSeeds          int64
+	TotalPeers          int64
+	DownloadPayloadRate int64
+	UploadPayloadRate   int64
+	TrackerStatus       string
+	TotalSize           int64
+
+	Files          []File
+	Peers          []Peer
+	FilePriorities []int64
+	FileProgress   []float32
+}
+
+type File struct {
+	Index  int64
+	Size   int64
+	Offset int64
+	Path   string
+}
+
+type Peer struct {
+	Client    string
+	IP        string
+	Progress  float32
+	Seed      int64
+	DownSpeed int64
+	UpSpeed   int64
+	Country   string
+}
 
 const (
 	rpcResponse rpcResponseTypeID = 1
 	rpcError    rpcResponseTypeID = 2
 	rpcEvent    rpcResponseTypeID = 3
 )
+
+// RPCError is an error returned by RPC calls.
+type RPCError struct {
+	ExceptionType    string
+	ExceptionMessage string
+	TraceBack        string
+}
+
+func (e RPCError) Error() string {
+	return fmt.Sprintf("RPC error %s('%s')\n%s", e.ExceptionType, e.ExceptionMessage, e.TraceBack)
+}
 
 // DelugeResponse is a response returned from a completed RPC call.
 type DelugeResponse struct {
@@ -79,9 +144,7 @@ type DelugeResponse struct {
 	// only for rpcResponse
 	returnValue rencode.List
 	// only in rpcError
-	exceptionType    string
-	exceptionMessage string
-	traceBack        string
+	RPCError
 	// only in rpcEvent
 	eventName string
 	data      rencode.List
@@ -95,7 +158,7 @@ func (dr *DelugeResponse) IsError() bool {
 func (dr *DelugeResponse) String() string {
 	switch dr.messageType {
 	case rpcError:
-		return fmt.Sprintf("RPC error %s('%s')\n%s", dr.exceptionType, dr.exceptionMessage, dr.traceBack)
+		return dr.RPCError.Error()
 	case rpcResponse:
 		typeStr := ""
 		for _, v := range dr.returnValue.Values() {
@@ -119,7 +182,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	}
 
 	// rencode -> zlib -> openssl -> TCP
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	z := zlib.NewWriter(&b)
 	e := rencode.NewEncoder(z)
 
@@ -162,22 +225,47 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	if err != nil {
 		return nil, err
 	}
-	d := rencode.NewDecoder(zr)
 
+	var d *rencode.Decoder
+	if c.settings.DebugSaveInteractions {
+		var inB bytes.Buffer
+		_, err = io.Copy(&inB, zr)
+		if err != nil {
+			return nil, err
+		}
+		inBytes := inB.Bytes()
+		d = rencode.NewDecoder(bytes.NewReader(inBytes))
+		c.DebugIncoming = append(c.DebugIncoming, inBytes)
+	} else {
+		d = rencode.NewDecoder(zr)
+	}
+
+	resp, err := handleRpcResponse(d, c.serial)
+	if err != nil {
+		return nil, err
+	}
+	if c.settings.Logger != nil {
+		c.settings.Logger.Printf("RPC(%s) = %s\n", methodName, resp.String())
+	}
+	return resp, nil
+}
+
+func handleRpcResponse(d *rencode.Decoder, expectedSerial int64) (*DelugeResponse, error) {
 	var respList rencode.List
-	err = d.Scan(&respList)
+	err := d.Scan(&respList)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := DelugeResponse{}
+	var resp DelugeResponse
 	var mt int64
 	err = respList.Scan(&mt, &resp.requestID)
 	if err != nil {
 		return nil, err
 	}
-	if resp.requestID != c.serial {
-		return nil, errors.New("request/response serial id mismatch")
+	if resp.requestID != expectedSerial {
+		return nil, SerialMismatchError{expectedSerial, resp.requestID}
+
 	}
 	resp.messageType = rpcResponseTypeID(mt)
 
@@ -193,7 +281,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 		if err != nil {
 			return nil, err
 		}
-		err = errList.Scan(&resp.exceptionType, &resp.exceptionMessage, &resp.traceBack)
+		err = errList.Scan(&resp.ExceptionType, &resp.ExceptionMessage, &resp.TraceBack)
 		if err != nil {
 			return nil, err
 		}
@@ -201,10 +289,6 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 		return nil, errors.New("event support not available")
 	default:
 		return nil, errors.New("unknown message type")
-	}
-
-	if c.settings.Logger != nil {
-		c.settings.Logger.Printf("RPC(%s) = %s\n", methodName, resp.String())
 	}
 
 	return &resp, nil
@@ -232,14 +316,21 @@ func (c *Client) Close() error {
 
 // Connect performs connection to a Deluge daemon second previously specified settings.
 func (c *Client) Connect() error {
-	var err error
-	c.conn, err = tls.Dial("tcp", fmt.Sprintf("%s:%d", c.settings.Hostname, c.settings.Port),
-		&tls.Config{
-			InsecureSkipVerify: true, // x509: cannot verify signature: algorithm unimplemented
-		})
+	dialer := new(net.Dialer)
+	rawConn, err := dialer.Dial("tcp", fmt.Sprintf("%s:%d", c.settings.Hostname, c.settings.Port))
 	if err != nil {
 		return err
 	}
+
+	err = enableKeepAlive(rawConn, 10*time.Second, 2, 5*time.Second)
+	if err != nil {
+		return err
+	}
+
+	c.conn = tls.Client(rawConn, &tls.Config{
+		ServerName:         c.settings.Hostname,
+		InsecureSkipVerify: true, // x509: cannot verify signature: algorithm unimplemented
+	})
 
 	if c.settings.Logger != nil {
 		c.settings.Logger.Printf("connected to %s:%d\n", c.settings.Hostname, c.settings.Port)
@@ -251,7 +342,7 @@ func (c *Client) Connect() error {
 		return err
 	}
 	if resp.IsError() {
-		return RPCError{resp.String()}
+		return resp.RPCError
 	}
 
 	// get class of logged-in user
@@ -274,7 +365,7 @@ func (c *Client) MethodsList() ([]string, error) {
 		return []string{}, err
 	}
 	if resp.IsError() {
-		return []string{}, RPCError{resp.String()}
+		return []string{}, resp.RPCError
 	}
 
 	var methodsList rencode.List
@@ -297,7 +388,7 @@ func (c *Client) DaemonVersion() (string, error) {
 		return "", err
 	}
 	if resp.IsError() {
-		return "", RPCError{resp.String()}
+		return "", resp.RPCError
 	}
 
 	var info string
@@ -320,16 +411,120 @@ func (c *Client) AddTorrentMagnet(magnetURI string) (string, error) {
 		return "", err
 	}
 	if resp.IsError() {
-		return "", RPCError{resp.String()}
+		return "", resp.RPCError
 	}
 
 	// returned hash may be nil if torrent was already added
-	torrentHash, err := resp.returnValue.Get(0)
-	if err != nil {
-		return "", err
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return "", ErrInvalidReturnValue
 	}
+	torrentHash := vals[0]
+	//TODO: is this nil comparison valid?
 	if torrentHash == nil {
 		return "", nil
 	}
 	return string(torrentHash.([]uint8)), nil
+}
+
+var STATUS_KEYS = rencode.NewList(
+	"state",
+	"download_location",
+	"tracker_host",
+	"tracker_status",
+	"next_announce",
+	"name",
+	"total_size",
+	"progress",
+	"num_seeds",
+	"total_seeds",
+	"num_peers",
+	"total_peers",
+	"eta",
+	"download_payload_rate",
+	"upload_payload_rate",
+	"ratio",
+	"distributed_copies",
+	"num_pieces",
+	"piece_length",
+	"total_done",
+	"files",
+	"file_priorities",
+	"file_progress",
+	"peers",
+	"is_seed",
+	"is_finished",
+	"active_time",
+	"seeding_time")
+
+func (c *Client) TorrentsStatus() (map[string]*TorrentStatus, error) {
+	var args rencode.List
+	args.Add(rencode.Dictionary{})
+	args.Add(STATUS_KEYS)
+
+	resp, err := c.rpc("core.get_torrents_status", args, rencode.Dictionary{})
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsError() {
+		return nil, resp.RPCError
+	}
+
+	return decodeTorrentsStatusResponse(resp)
+}
+
+func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStatus, error) {
+	values := resp.returnValue.Values()
+	if len(values) != 1 {
+		return nil, ErrInvalidReturnValue
+	}
+	rd, ok := values[0].(rencode.Dictionary)
+	if !ok {
+		return nil, ErrInvalidListResult
+	}
+
+	d, err := rd.Zip()
+	if err != nil {
+		return nil, err
+	}
+
+	result := map[string]*TorrentStatus{}
+	for k, rv := range d {
+		v, ok := rv.(rencode.Dictionary)
+		if !ok {
+			return nil, ErrInvalidListResult
+		}
+
+		var ts TorrentStatus
+		err = v.ToStruct(&ts)
+		if err != nil {
+			return nil, err
+		}
+		result[k] = &ts
+	}
+
+	return result, nil
+}
+
+func (c *Client) DeleteTorrent(id string) (bool, error) {
+	var args rencode.List
+	args.Add(id, true)
+
+	// perform login
+	resp, err := c.rpc("core.remove_torrent", args, rencode.Dictionary{})
+	if err != nil {
+		return false, err
+	}
+	if resp.IsError() {
+		return false, resp.RPCError
+	}
+
+	// returned hash may be nil if torrent was already added
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return false, ErrInvalidReturnValue
+	}
+	success := vals[0]
+
+	return success.(bool), nil
 }

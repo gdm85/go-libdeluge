@@ -1,4 +1,4 @@
-all: test build bin/add-torrent
+all: test build bin/delugecli
 
 setup-gopath:
 	mkdir -p .gopath
@@ -9,13 +9,13 @@ build: setup-gopath
 	GO15VENDOREXPERIMENT=1 GOPATH="$(CURDIR)/.gopath" go build
 
 test: *.go
-	GO15VENDOREXPERIMENT=1 GOPATH="$(CURDIR)/.gopath" go test
+	GO15VENDOREXPERIMENT=1 GOPATH="$(CURDIR)/.gopath" go test -v
 
-bin/add-torrent: setup-gopath
+bin/delugecli: setup-gopath
 	mkdir -p bin
-	cd examples && GO15VENDOREXPERIMENT=1 GOPATH="$(CURDIR)/.gopath" GOBIN="$(CURDIR)/bin/" go install add-torrent.go
+	GO15VENDOREXPERIMENT=1 GOPATH="$(CURDIR)/.gopath" GOBIN="$(CURDIR)/bin/" go install delugecli/cli.go
 
 clean:
-	rm -f bin/add-torrent
+	rm -f bin/delugecli
 
-.PHONY: all setup-gopath build test clean
+.PHONY: all setup-gopath build test clean bin/delugecli
