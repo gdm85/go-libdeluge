@@ -41,6 +41,19 @@ var (
 	ErrInvalidReturnValue = errors.New("invalid return value")
 )
 
+type DelugeClient interface {
+	MethodsList() ([]string, error)
+	DaemonVersion() (string, error)
+	AddTorrentMagnet(magnetURI string) (string, error)
+	DeleteTorrent(id string) (bool, error)
+	TorrentsStatus() (map[string]*TorrentStatus, error)
+}
+
+type NativeDelugeClient interface {
+	Close() error
+	Connect() error
+}
+
 type SerialMismatchError struct {
 	ExpectedID int64
 	ReceivedID int64
@@ -69,6 +82,9 @@ type Client struct {
 	classID       int64
 	DebugIncoming [][]byte
 }
+
+var _ DelugeClient = &Client{}
+var _ NativeDelugeClient = &Client{}
 
 type rpcResponseTypeID int
 
