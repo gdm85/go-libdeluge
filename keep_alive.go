@@ -3,8 +3,6 @@ package delugeclient
 import (
 	"fmt"
 	"net"
-	"os"
-	"syscall"
 	"time"
 )
 
@@ -44,18 +42,6 @@ func enableKeepAlive(conn net.Conn, idleTime time.Duration, count int, interval 
 	}*/
 
 	return nil
-}
-
-func setIdle(fd int, secs int) error {
-	return os.NewSyscallError("setsockopt", syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, syscall.TCP_KEEPIDLE, secs))
-}
-
-func setCount(fd int, n int) error {
-	return os.NewSyscallError("setsockopt", syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, syscall.TCP_KEEPCNT, n))
-}
-
-func setInterval(fd int, secs int) error {
-	return os.NewSyscallError("setsockopt", syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, syscall.TCP_KEEPINTVL, secs))
 }
 
 func secs(d time.Duration) int {
