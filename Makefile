@@ -13,7 +13,7 @@ test: *.go
 
 bin/delugecli: setup-gopath
 	mkdir -p bin
-	GO15VENDOREXPERIMENT=1 GOPATH="$(CURDIR)/.gopath" GOBIN="$(CURDIR)/bin/" go install cli/delugecli.go
+	GO15VENDOREXPERIMENT=1 GOPATH="$(CURDIR)/.gopath" GOBIN="$(CURDIR)/bin/" go install cli/cli.go
 	mv bin/cli bin/delugecli
 
 clean:
