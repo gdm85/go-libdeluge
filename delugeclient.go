@@ -44,6 +44,7 @@ var (
 type DelugeClient interface {
 	MethodsList() ([]string, error)
 	DaemonVersion() (string, error)
+	GetFreeSpace(string) (int64, error)
 	AddTorrentMagnet(magnetURI string) (string, error)
 	DeleteTorrent(id string) (bool, error)
 	TorrentsStatus() (map[string]*TorrentStatus, error)
@@ -191,6 +192,9 @@ func (c *Client) resetTimeout() error {
 }
 
 func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictionary) (*DelugeResponse, error) {
+	if c.conn == nil {
+		return nil, ErrAlreadyClosed
+	}
 	// generate serial
 	c.serial++
 	if c.serial == math.MaxInt64 {
@@ -414,6 +418,28 @@ func (c *Client) DaemonVersion() (string, error) {
 	}
 
 	return info, nil
+}
+
+// GetFreeSpace returns the available free space; path is optional.
+func (c *Client) GetFreeSpace(path string) (int64, error) {
+	var args rencode.List
+	args.Add(path)
+
+	resp, err := c.rpc("core.get_free_space", args, rencode.Dictionary{})
+	if err != nil {
+		return 0, err
+	}
+	if resp.IsError() {
+		return 0, resp.RPCError
+	}
+
+	var freeSpace int64
+	err = resp.returnValue.Scan(&freeSpace)
+	if err != nil {
+		return 0, err
+	}
+
+	return freeSpace, nil
 }
 
 // AddTorrentMagnet adds a torrent via magnet URI and returns the torrent hash.
