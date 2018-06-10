@@ -96,7 +96,7 @@ type TorrentStatus struct {
 	DistributedCopies   float32
 	TotalDone           int64
 	SeedingTime         int64
-	ETA                 int64
+	ETA                 float32 // most times an integer
 	IsFinished          bool
 	NumPieces           int64
 	TrackerHost         string
