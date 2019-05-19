@@ -1,3 +1,0 @@
-[submodule "vendor/github.com/gdm85/go-rencode"]
-	path = vendor/github.com/gdm85/go-rencode
-	url = https://github.com/gdm85/go-rencode
