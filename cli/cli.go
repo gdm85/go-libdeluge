@@ -16,12 +16,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -35,6 +37,7 @@ var (
 	logLevel           string
 
 	addURI       string
+	addFile      string
 	listTorrents bool
 
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
@@ -53,6 +56,7 @@ func init() {
 
 	fs.StringVar(&addURI, "a", "", "Add a torrent via magnet URI")
 	fs.StringVar(&addURI, "add", "", "Add a torrent via magnet URI")
+	fs.StringVar(&addFile, "add-file", "", "Add a torrent via file")
 
 	fs.BoolVar(&listTorrents, "e", false, "List all torrents")
 	fs.BoolVar(&listTorrents, "list", false, "List all torrents")
@@ -122,6 +126,29 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: could not add magnet URI '%s': %v\n", addURI, err)
 			os.Exit(5)
+		}
+
+		if torrentHash == "" {
+			fmt.Println("torrent was not added")
+		} else {
+			fmt.Println("added torrent with hash:", torrentHash)
+		}
+
+	}
+
+	if addFile != `` {
+		data, err := ioutil.ReadFile(addFile)
+		if err != nil {
+			fmt.Println("Error reading file :", err)
+			os.Exit(6)
+		}
+
+		fileContentBase64 := base64.StdEncoding.EncodeToString(data)
+
+		torrentHash, err := deluge.AddTorrentFile(filepath.Base(addFile), fileContentBase64, nil)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: could not add file '%s': %v\n", addFile, err)
+			os.Exit(6)
 		}
 
 		if torrentHash == "" {

@@ -46,6 +46,7 @@ type DelugeClient interface {
 	DaemonVersion() (string, error)
 	GetFreeSpace(string) (int64, error)
 	AddTorrentMagnet(magnetURI string, options Options) (string, error)
+	AddTorrentFile(fileName, fileContentBase64 string, options Options) (string, error)
 	AddTorrentURL(url string, options Options) (string, error)
 	DeleteTorrent(id string) (bool, error)
 	TorrentsStatus() (map[string]*TorrentStatus, error)
@@ -466,6 +467,31 @@ func sliceToRencodeList(s []string) rencode.List {
 	}
 
 	return list
+}
+
+func (c *Client) AddTorrentFile(fileName, fileContentBase64 string, options Options) (string, error) {
+	var args rencode.List
+	args.Add(fileName, fileContentBase64, mapToRencodeDictionary(options))
+
+	resp, err := c.rpc("core.add_torrent_file", args, rencode.Dictionary{})
+	if err != nil {
+		return "", err
+	}
+	if resp.IsError() {
+		return "", resp.RPCError
+	}
+
+	// returned hash may be nil if torrent was already added
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return "", ErrInvalidReturnValue
+	}
+	torrentHash := vals[0]
+	//TODO: is this nil comparison valid?
+	if torrentHash == nil {
+		return "", nil
+	}
+	return string(torrentHash.([]uint8)), nil
 }
 
 // AddTorrentMagnet adds a torrent via magnet URI and returns the torrent hash.
