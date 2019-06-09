@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gdm85/go-libdeluge"
+	"github.com/prvn/go-libdeluge"
 )
 
 var (

@@ -1,4 +1,4 @@
-module github.com/gdm85/go-libdeluge
+module github.com/prvn/go-libdeluge
 
 go 1.12
 
