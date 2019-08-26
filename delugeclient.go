@@ -230,6 +230,11 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 		c.settings.Logger.Println("flushed zlib buffer")
 	}
 
+	err = c.resetTimeout()
+	if err != nil {
+		return nil, err
+	}
+
 	// write to connection without closing it
 	var n int
 	n, err = c.conn.Write(b.Bytes())
@@ -239,11 +244,6 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	if c.settings.Logger != nil {
 		//		c.settings.Logger.Println(hex.Dump(b.Bytes()))
 		c.settings.Logger.Printf("written %d bytes to RPC connection", n)
-	}
-
-	err = c.resetTimeout()
-	if err != nil {
-		return nil, err
 	}
 
 	// setup a reader: TCP -> openssl -> zlib -> rencode -> {objects}
