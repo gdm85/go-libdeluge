@@ -7,9 +7,7 @@ test: *.go
 	go test -v
 
 bin/delugecli:
-	mkdir -p bin
-	GOBIN="$(CURDIR)/bin/" go install cli/cli.go
-	mv bin/cli bin/delugecli
+	go build -o $@ cli/cli.go
 
 clean:
 	rm -f bin/delugecli

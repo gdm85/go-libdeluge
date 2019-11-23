@@ -1,6 +1,6 @@
 /*
- * go-libdeluge v0.2.0 - a native deluge RPC client library
- * Copyright (C) 2015~2017 gdm85 - https://github.com/gdm85/go-libdeluge/
+ * go-libdeluge v0.3.0 - a native deluge RPC client library
+ * Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-libdeluge/
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -23,7 +23,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/gdm85/go-libdeluge"
 )
@@ -36,6 +35,8 @@ var (
 
 	addURI       string
 	listTorrents bool
+	v2daemon     bool
+	free         bool
 
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
 )
@@ -54,8 +55,13 @@ func init() {
 	fs.StringVar(&addURI, "a", "", "Add a torrent via magnet URI")
 	fs.StringVar(&addURI, "add", "", "Add a torrent via magnet URI")
 
+	fs.BoolVar(&v2daemon, "v2", false, "Use protocol compatible with a v2 daemon")
+
 	fs.BoolVar(&listTorrents, "e", false, "List all torrents")
 	fs.BoolVar(&listTorrents, "list", false, "List all torrents")
+
+	fs.BoolVar(&free, "f", false, "Display free space")
+	fs.BoolVar(&free, "free", false, "Display free space")
 }
 
 func main() {
@@ -91,7 +97,14 @@ func main() {
 		os.Exit(2)
 	}
 
-	deluge := delugeclient.New(delugeclient.Settings{host, port, username, password, logger, time.Duration(0), debugIncoming})
+	deluge := delugeclient.New(delugeclient.Settings{
+		Hostname:              host,
+		Port:                  port,
+		Login:                 username,
+		Password:              password,
+		Logger:                logger,
+		V2Daemon:              v2daemon,
+		DebugSaveInteractions: debugIncoming})
 
 	// perform connection to Deluge server
 	err = deluge.Connect()
@@ -130,6 +143,15 @@ func main() {
 			fmt.Println("added torrent with hash:", torrentHash)
 		}
 
+	}
+
+	if free {
+		n, err := deluge.GetFreeSpace("")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: could not read free space: %v\n", err)
+			os.Exit(6)
+		}
+		fmt.Printf("Free space: %d bytes\n", n)
 	}
 
 	if listTorrents {

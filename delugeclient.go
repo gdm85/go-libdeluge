@@ -1,6 +1,6 @@
 /*
- * go-libdeluge v0.2.0 - a native deluge RPC client library
- * Copyright (C) 2015~2017 gdm85 - https://github.com/gdm85/go-libdeluge/
+ * go-libdeluge v0.3.0 - a native deluge RPC client library
+ * Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-libdeluge/
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/tls"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -72,12 +73,14 @@ type Options map[string]interface{}
 
 // Settings defines all settings for a Deluge client connection.
 type Settings struct {
-	Hostname              string
-	Port                  uint
-	Login                 string
-	Password              string
-	Logger                *log.Logger
-	ReadWriteTimeout      time.Duration // Timeout for read/write operations on the TCP stream.
+	Hostname         string
+	Port             uint
+	Login            string
+	Password         string
+	Logger           *log.Logger
+	ReadWriteTimeout time.Duration // Timeout for read/write operations on the TCP stream.
+	// V2Daemon enables the new v1 protocol for v2 daemons.
+	V2Daemon              bool
 	DebugSaveInteractions bool
 }
 
@@ -119,6 +122,7 @@ type TorrentStatus struct {
 	UploadPayloadRate   int64
 	TrackerStatus       string
 	TotalSize           int64
+	DownloadLocation    string
 
 	Files          []File
 	Peers          []Peer
@@ -157,7 +161,7 @@ type RPCError struct {
 }
 
 func (e RPCError) Error() string {
-	return fmt.Sprintf("RPC error %s('%s')\n%s", e.ExceptionType, e.ExceptionMessage, e.TraceBack)
+	return fmt.Sprintf("RPC error %s('%s')\nTraceback: %s", e.ExceptionType, e.ExceptionMessage, e.TraceBack)
 }
 
 // DelugeResponse is a response returned from a completed RPC call.
@@ -196,6 +200,9 @@ func (c *Client) resetTimeout() error {
 	// set timeout
 	return c.conn.SetDeadline(time.Now().Add(c.settings.ReadWriteTimeout))
 }
+
+// protocol version used with Deluge v2+
+const PROTOCOL_VERSION = 1
 
 func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictionary) (*DelugeResponse, error) {
 	if c.conn == nil {
@@ -236,18 +243,56 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	}
 
 	// write to connection without closing it
-	var n int
-	n, err = c.conn.Write(b.Bytes())
+	if c.settings.V2Daemon {
+		// on v2+ send the header
+		var header [5]byte
+		header[0] = PROTOCOL_VERSION
+		binary.BigEndian.PutUint32(header[1:], uint32(b.Len()))
+		_, err = c.conn.Write(header[:])
+		if err != nil {
+			return nil, err
+		}
+		if c.settings.Logger != nil {
+			c.settings.Logger.Printf("written V2 header %X to RPC connection", header[:])
+		}
+	}
+	n, err := c.conn.Write(b.Bytes())
 	if err != nil {
 		return nil, err
 	}
 	if c.settings.Logger != nil {
-		//		c.settings.Logger.Println(hex.Dump(b.Bytes()))
 		c.settings.Logger.Printf("written %d bytes to RPC connection", n)
 	}
 
-	// setup a reader: TCP -> openssl -> zlib -> rencode -> {objects}
-	zr, err := zlib.NewReader(c.conn)
+	// setup a reader: TCP -> openssl -> zlib -> (header in V2) rencode -> {objects}
+	var src io.Reader
+	if !c.settings.V2Daemon {
+		src = c.conn
+	} else {
+		// on v2+ first identify the header, then use the compressed body (more inefficient)
+		// a zlib header could be automatically detected but it's pointless since we use a flag to identify V2 daemons
+		// (remote endpoint does not version handshakes)
+		var header [5]byte
+		_, err = c.conn.Read(header[:])
+		if err != nil {
+			return nil, err
+		}
+
+		if header[0] != PROTOCOL_VERSION {
+			return nil, fmt.Errorf("found protocol version %d but expected %d", header[0], PROTOCOL_VERSION)
+		}
+
+		l := binary.BigEndian.Uint32(header[1:])
+		b.Reset()
+		_, err = io.CopyN(&b, c.conn, int64(l))
+		if err != nil {
+			return nil, err
+		}
+
+		src = &b
+	}
+
+	zr, err := zlib.NewReader(src)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +311,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 		d = rencode.NewDecoder(zr)
 	}
 
-	resp, err := handleRpcResponse(d, c.serial)
+	resp, err := c.handleRpcResponse(d, c.serial)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +321,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	return resp, nil
 }
 
-func handleRpcResponse(d *rencode.Decoder, expectedSerial int64) (*DelugeResponse, error) {
+func (c *Client) handleRpcResponse(d *rencode.Decoder, expectedSerial int64) (*DelugeResponse, error) {
 	var respList rencode.List
 	err := d.Scan(&respList)
 	if err != nil {
@@ -291,25 +336,33 @@ func handleRpcResponse(d *rencode.Decoder, expectedSerial int64) (*DelugeRespons
 	}
 	if resp.requestID != expectedSerial {
 		return nil, SerialMismatchError{expectedSerial, resp.requestID}
-
 	}
 	resp.messageType = rpcResponseTypeID(mt)
 
-	// shift first two elements
+	// shift first two elements which have already been read
 	respList = rencode.NewList(respList.Values()[2:]...)
 
 	switch resp.messageType {
 	case rpcResponse:
 		resp.returnValue = respList
 	case rpcError:
-		var errList rencode.List
-		err = respList.Scan(&errList)
-		if err != nil {
-			return nil, err
-		}
-		err = errList.Scan(&resp.ExceptionType, &resp.ExceptionMessage, &resp.TraceBack)
-		if err != nil {
-			return nil, err
+		if c.settings.V2Daemon {
+			var exceptionArgs rencode.List
+			var errDict rencode.Dictionary
+			err = respList.Scan(&resp.ExceptionType, &exceptionArgs, &errDict, &resp.TraceBack)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			var errList rencode.List
+			err = respList.Scan(&errList)
+			if err != nil {
+				return nil, err
+			}
+			err = errList.Scan(&resp.ExceptionType, &resp.ExceptionMessage, &resp.TraceBack)
+			if err != nil {
+				return nil, err
+			}
 		}
 	case rpcEvent:
 		return nil, errors.New("event support not available")
@@ -362,8 +415,15 @@ func (c *Client) Connect() error {
 		c.settings.Logger.Printf("connected to %s:%d\n", c.settings.Hostname, c.settings.Port)
 	}
 
+	var kwargs rencode.Dictionary
+
+	// in v2+ the client version must be specified
+	if c.settings.V2Daemon {
+		kwargs.Add("client_version", "2.0.3")
+	}
+
 	// perform login
-	resp, err := c.rpc("daemon.login", rencode.NewList(c.settings.Login, c.settings.Password), rencode.Dictionary{})
+	resp, err := c.rpc("daemon.login", rencode.NewList(c.settings.Login, c.settings.Password), kwargs)
 	if err != nil {
 		return err
 	}
@@ -426,28 +486,6 @@ func (c *Client) DaemonVersion() (string, error) {
 	return info, nil
 }
 
-// GetFreeSpace returns the available free space; path is optional.
-func (c *Client) GetFreeSpace(path string) (int64, error) {
-	var args rencode.List
-	args.Add(path)
-
-	resp, err := c.rpc("core.get_free_space", args, rencode.Dictionary{})
-	if err != nil {
-		return 0, err
-	}
-	if resp.IsError() {
-		return 0, resp.RPCError
-	}
-
-	var freeSpace int64
-	err = resp.returnValue.Scan(&freeSpace)
-	if err != nil {
-		return 0, err
-	}
-
-	return freeSpace, nil
-}
-
 func mapToRencodeDictionary(m map[string]interface{}) rencode.Dictionary {
 	var dict rencode.Dictionary
 	if m != nil {
@@ -466,195 +504,4 @@ func sliceToRencodeList(s []string) rencode.List {
 	}
 
 	return list
-}
-
-// AddTorrentMagnet adds a torrent via magnet URI and returns the torrent hash.
-func (c *Client) AddTorrentMagnet(magnetURI string, options Options) (string, error) {
-	var args rencode.List
-	args.Add(magnetURI, mapToRencodeDictionary(options))
-
-	resp, err := c.rpc("core.add_torrent_magnet", args, rencode.Dictionary{})
-	if err != nil {
-		return "", err
-	}
-	if resp.IsError() {
-		return "", resp.RPCError
-	}
-
-	// returned hash may be nil if torrent was already added
-	vals := resp.returnValue.Values()
-	if len(vals) == 0 {
-		return "", ErrInvalidReturnValue
-	}
-	torrentHash := vals[0]
-	//TODO: is this nil comparison valid?
-	if torrentHash == nil {
-		return "", nil
-	}
-	return string(torrentHash.([]uint8)), nil
-}
-
-// AddTorrentURL adds a torrent via a URL and returns the torrent hash.
-func (c *Client) AddTorrentURL(url string, options Options) (string, error) {
-	var args rencode.List
-	args.Add(url, mapToRencodeDictionary(options))
-
-	resp, err := c.rpc("core.add_torrent_url", args, rencode.Dictionary{})
-	if err != nil {
-		return "", err
-	}
-	if resp.IsError() {
-		return "", resp.RPCError
-	}
-
-	// returned hash may be nil if torrent was already added
-	vals := resp.returnValue.Values()
-	if len(vals) == 0 {
-		return "", ErrInvalidReturnValue
-	}
-	torrentHash := vals[0]
-	//TODO: is this nil comparison valid?
-	if torrentHash == nil {
-		return "", nil
-	}
-	return string(torrentHash.([]uint8)), nil
-}
-
-var STATUS_KEYS = rencode.NewList(
-	"state",
-	"download_location",
-	"tracker_host",
-	"tracker_status",
-	"next_announce",
-	"name",
-	"total_size",
-	"progress",
-	"num_seeds",
-	"total_seeds",
-	"num_peers",
-	"total_peers",
-	"eta",
-	"download_payload_rate",
-	"upload_payload_rate",
-	"ratio",
-	"distributed_copies",
-	"num_pieces",
-	"piece_length",
-	"total_done",
-	"files",
-	"file_priorities",
-	"file_progress",
-	"peers",
-	"is_seed",
-	"is_finished",
-	"active_time",
-	"seeding_time")
-
-func (c *Client) TorrentsStatus() (map[string]*TorrentStatus, error) {
-	var args rencode.List
-	args.Add(rencode.Dictionary{})
-	args.Add(STATUS_KEYS)
-
-	resp, err := c.rpc("core.get_torrents_status", args, rencode.Dictionary{})
-	if err != nil {
-		return nil, err
-	}
-	if resp.IsError() {
-		return nil, resp.RPCError
-	}
-
-	return decodeTorrentsStatusResponse(resp)
-}
-
-func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStatus, error) {
-	values := resp.returnValue.Values()
-	if len(values) != 1 {
-		return nil, ErrInvalidReturnValue
-	}
-	rd, ok := values[0].(rencode.Dictionary)
-	if !ok {
-		return nil, ErrInvalidListResult
-	}
-
-	d, err := rd.Zip()
-	if err != nil {
-		return nil, err
-	}
-
-	result := map[string]*TorrentStatus{}
-	for k, rv := range d {
-		v, ok := rv.(rencode.Dictionary)
-		if !ok {
-			return nil, ErrInvalidListResult
-		}
-
-		var ts TorrentStatus
-		err = v.ToStruct(&ts)
-		if err != nil {
-			return nil, err
-		}
-		result[k] = &ts
-	}
-
-	return result, nil
-}
-
-func (c *Client) DeleteTorrent(id string) (bool, error) {
-	var args rencode.List
-	args.Add(id, true)
-
-	// perform login
-	resp, err := c.rpc("core.remove_torrent", args, rencode.Dictionary{})
-	if err != nil {
-		return false, err
-	}
-	if resp.IsError() {
-		return false, resp.RPCError
-	}
-
-	// returned hash may be nil if torrent was already added
-	vals := resp.returnValue.Values()
-	if len(vals) == 0 {
-		return false, ErrInvalidReturnValue
-	}
-	success := vals[0]
-
-	return success.(bool), nil
-}
-
-func (c *Client) MoveStorage(torrentIDs []string, dest string) error {
-	var args rencode.List
-	args.Add(sliceToRencodeList(torrentIDs), dest)
-
-	resp, err := c.rpc("core.move_storage", args, rencode.Dictionary{})
-	if err != nil {
-		return err
-	}
-	if resp.IsError() {
-		return resp.RPCError
-	}
-
-	return err
-}
-
-func (c *Client) SessionState() ([]string, error) {
-	resp, err := c.rpc("core.get_session_state", rencode.List{}, rencode.Dictionary{})
-	if err != nil {
-		return nil, err
-	}
-	if resp.IsError() {
-		return nil, resp.RPCError
-	}
-
-	var idList rencode.List
-	err = resp.returnValue.Scan(&idList)
-	if err != nil {
-		return []string{}, err
-	}
-	result := make([]string, idList.Length())
-	for i, m := range idList.Values() {
-		result[i] = string(m.([]byte))
-	}
-
-	return result, nil
 }
