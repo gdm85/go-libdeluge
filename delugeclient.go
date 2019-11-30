@@ -87,10 +87,15 @@ type Settings struct {
 // Client is a Deluge RPC client.
 type Client struct {
 	settings      Settings
-	conn          *tls.Conn
+	safeConn      SafeConn
 	serial        int64
 	classID       int64
 	DebugIncoming [][]byte
+}
+
+type SafeConn struct {
+	conn             *tls.Conn
+	readWriteTimeout time.Duration
 }
 
 var _ DelugeClient = &Client{}
@@ -196,16 +201,31 @@ func (dr *DelugeResponse) String() string {
 	return fmt.Sprintf("invalid message type: %d", dr.messageType)
 }
 
-func (c *Client) resetTimeout() error {
-	// set timeout
-	return c.conn.SetDeadline(time.Now().Add(c.settings.ReadWriteTimeout))
+func (sc *SafeConn) Read(p []byte) (n int, err error) {
+	// set deadline
+	err = sc.conn.SetReadDeadline(time.Now().Add(sc.readWriteTimeout))
+	if err != nil {
+		return 0, err
+	}
+
+	return sc.conn.Read(p)
+}
+
+func (sc *SafeConn) Write(p []byte) (n int, err error) {
+	// set deadline
+	err = sc.conn.SetWriteDeadline(time.Now().Add(sc.readWriteTimeout))
+	if err != nil {
+		return 0, err
+	}
+
+	return sc.conn.Write(p)
 }
 
 // protocol version used with Deluge v2+
 const PROTOCOL_VERSION = 1
 
 func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictionary) (*DelugeResponse, error) {
-	if c.conn == nil {
+	if c.safeConn.conn == nil {
 		return nil, ErrAlreadyClosed
 	}
 	// generate serial
@@ -237,18 +257,13 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 		c.settings.Logger.Println("flushed zlib buffer")
 	}
 
-	err = c.resetTimeout()
-	if err != nil {
-		return nil, err
-	}
-
 	// write to connection without closing it
 	if c.settings.V2Daemon {
 		// on v2+ send the header
 		var header [5]byte
 		header[0] = PROTOCOL_VERSION
 		binary.BigEndian.PutUint32(header[1:], uint32(b.Len()))
-		_, err = c.conn.Write(header[:])
+		_, err = c.safeConn.Write(header[:])
 		if err != nil {
 			return nil, err
 		}
@@ -256,7 +271,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 			c.settings.Logger.Printf("written V2 header %X to RPC connection", header[:])
 		}
 	}
-	n, err := c.conn.Write(b.Bytes())
+	n, err := c.safeConn.Write(b.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -267,13 +282,13 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	// setup a reader: TCP -> openssl -> zlib -> (header in V2) rencode -> {objects}
 	var src io.Reader
 	if !c.settings.V2Daemon {
-		src = c.conn
+		src = &c.safeConn
 	} else {
 		// on v2+ first identify the header, then use the compressed body (more inefficient)
 		// a zlib header could be automatically detected but it's pointless since we use a flag to identify V2 daemons
 		// (remote endpoint does not version handshakes)
 		var header [5]byte
-		_, err = c.conn.Read(header[:])
+		_, err = c.safeConn.Read(header[:])
 		if err != nil {
 			return nil, err
 		}
@@ -284,7 +299,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 
 		l := binary.BigEndian.Uint32(header[1:])
 		b.Reset()
-		_, err = io.CopyN(&b, c.conn, int64(l))
+		_, err = io.CopyN(&b, &c.safeConn, int64(l))
 		if err != nil {
 			return nil, err
 		}
@@ -385,11 +400,11 @@ func New(s Settings) *Client {
 
 // Close closes the connection of a Deluge client.
 func (c *Client) Close() error {
-	if c.conn == nil {
+	if c.safeConn.conn == nil {
 		return ErrAlreadyClosed
 	}
-	err := c.conn.Close()
-	c.conn = nil
+	err := c.safeConn.conn.Close()
+	c.safeConn.conn = nil
 	return err
 }
 
@@ -406,10 +421,11 @@ func (c *Client) Connect() error {
 		return err
 	}
 
-	c.conn = tls.Client(rawConn, &tls.Config{
+	c.safeConn.conn = tls.Client(rawConn, &tls.Config{
 		ServerName:         c.settings.Hostname,
 		InsecureSkipVerify: true, // x509: cannot verify signature: algorithm unimplemented
 	})
+	c.safeConn.readWriteTimeout = c.settings.ReadWriteTimeout
 
 	if c.settings.Logger != nil {
 		c.settings.Logger.Printf("connected to %s:%d\n", c.settings.Hostname, c.settings.Port)
