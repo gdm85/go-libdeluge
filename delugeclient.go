@@ -50,6 +50,7 @@ type DelugeClient interface {
 	AddTorrentURL(url string, options Options) (string, error)
 	DeleteTorrent(id string) (bool, error)
 	TorrentsStatus() (map[string]*TorrentStatus, error)
+	TorrentStatus(id string) (*TorrentStatus, error)
 	MoveStorage(torrentIDs []string, dest string) error
 	SetTorrentTracker(id, tracker string) error
 	SessionState() ([]string, error)

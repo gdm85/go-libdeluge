@@ -124,6 +124,22 @@ var STATUS_KEYS = rencode.NewList(
 	"active_time",
 	"seeding_time")
 
+func (c *Client) TorrentStatus(id string) (*TorrentStatus, error) {
+	var args rencode.List
+	args.Add(id)
+	args.Add(STATUS_KEYS)
+
+	resp, err := c.rpc("core.get_torrent_status", args, rencode.Dictionary{})
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsError() {
+		return nil, resp.RPCError
+	}
+
+	return decodeTorrentStatusResponse(resp)
+}
+
 func (c *Client) TorrentsStatus() (map[string]*TorrentStatus, error) {
 	var args rencode.List
 	args.Add(rencode.Dictionary{})
@@ -138,6 +154,22 @@ func (c *Client) TorrentsStatus() (map[string]*TorrentStatus, error) {
 	}
 
 	return decodeTorrentsStatusResponse(resp)
+}
+
+func decodeTorrentStatusResponse(resp *DelugeResponse) (*TorrentStatus, error) {
+	values := resp.returnValue.Values()
+	if len(values) != 1 {
+		return nil, ErrInvalidReturnValue
+	}
+	rd, ok := values[0].(rencode.Dictionary)
+	if !ok {
+		return nil, ErrInvalidListResult
+	}
+
+	var ts TorrentStatus
+	_ = rd.ToStruct(&ts)
+
+	return &ts, nil
 }
 
 func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStatus, error) {

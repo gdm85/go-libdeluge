@@ -93,7 +93,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.get_proxy`
 * [x] `core.get_session_state`
 * [ ] `core.get_session_status`
-* [ ] `core.get_torrent_status`
+* [x] `core.get_torrent_status`
 * [x] `core.get_torrents_status`
 * [ ] `core.glob`
 * [ ] `core.is_session_paused`
