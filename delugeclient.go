@@ -52,6 +52,7 @@ type DelugeClient interface {
 	TorrentsStatus() (map[string]*TorrentStatus, error)
 	MoveStorage(torrentIDs []string, dest string) error
 	SessionState() ([]string, error)
+	SetLabel(hash, label string) error
 }
 
 type NativeDelugeClient interface {
@@ -120,6 +121,7 @@ type TorrentStatus struct {
 	NumPeers            int64
 	NextAnnounce        int64
 	Name                string
+	Label               string
 	State               string
 	TotalSeeds          int64
 	TotalPeers          int64
