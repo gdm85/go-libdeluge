@@ -1,7 +1,7 @@
 package delugeclient
 
 /*
- * go-libdeluge v0.3.0 - a native deluge RPC client library
+ * go-libdeluge v0.3.1 - a native deluge RPC client library
  * Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-libdeluge/
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
