@@ -8,6 +8,10 @@ Go library for native RPC connection to a [Deluge](http://deluge-torrent.org) da
 
 [GNU GPL version 2](./LICENSE)
 
+# Supported deluge versions
+
+Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 daemon you must set `V2Daemon` to true in `delugeclient.Settings`.
+
 # How to build
 
 This project uses an automatically-provisioned GOPATH. Example init/building commands on a Linux system:
@@ -19,7 +23,27 @@ make
 
 # How to use
 
-The library by itself is a Go package and needs to be embedded in an UI or CLI application. An example CLI application is available through:
+The library by itself is a Go package and needs to be embedded in an UI or CLI application.
+
+```go
+	deluge := delugeclient.New(delugeclient.Settings{
+		Hostname:              "localhost",
+		Port:                  58846,
+		Login:                 "localclient",
+		Password:              "*************",
+		V2Daemon:              v2daemon})
+
+	// perform connection to Deluge server
+	err := deluge.Connect()
+
+	// ... use the 'deluge' client methods
+```
+
+To debug the library you may want to set `DebugSaveInteractions` to true.
+
+## Example CLI application
+
+An example CLI application is available through:
 ```
 go get github.com/gdm85/go-libdeluge/delugecli
 ```
