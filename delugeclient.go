@@ -368,6 +368,12 @@ func (c *Client) handleRpcResponse(d *rencode.Decoder, expectedSerial int64) (*D
 			if err != nil {
 				return nil, err
 			}
+			if exceptionArgs.Length() != 0 {
+				v := exceptionArgs.Values()[0]
+				if v, ok := v.([]byte); ok {
+					resp.ExceptionMessage = string(v)
+				}
+			}
 		} else {
 			var errList rencode.List
 			err = respList.Scan(&errList)
