@@ -231,3 +231,28 @@ func (c *Client) SessionState() ([]string, error) {
 
 	return result, nil
 }
+
+// SetTorrentTracker sets the primary tracker for the torrent with the
+// given hash to be `trackerURL`.
+func (c *Client) SetTorrentTracker(id, trackerURL string) error {
+
+	var tracker rencode.Dictionary
+	tracker.Add("url", trackerURL)
+	tracker.Add("tier", 0)
+
+	var trackers rencode.List
+	trackers.Add(tracker)
+
+	var args rencode.List
+	args.Add(id, trackers)
+
+	resp, err := c.rpc("core.set_torrent_trackers", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return nil
+}
