@@ -100,6 +100,7 @@ var STATUS_KEYS = rencode.NewList(
 	"tracker_status",
 	"next_announce",
 	"name",
+	"label",
 	"total_size",
 	"progress",
 	"num_seeds",
@@ -235,7 +236,6 @@ func (c *Client) SessionState() ([]string, error) {
 // SetTorrentTracker sets the primary tracker for the torrent with the
 // given hash to be `trackerURL`.
 func (c *Client) SetTorrentTracker(id, trackerURL string) error {
-
 	var tracker rencode.Dictionary
 	tracker.Add("url", trackerURL)
 	tracker.Add("tier", 0)
@@ -247,6 +247,22 @@ func (c *Client) SetTorrentTracker(id, trackerURL string) error {
 	args.Add(id, trackers)
 
 	resp, err := c.rpc("core.set_torrent_trackers", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return nil
+}
+
+// SetLabel adds or replaces a label for a torrent with given hash
+func (c *Client) SetLabel(hash, label string) error {
+	var args rencode.List
+	args.Add(hash, label)
+
+	resp, err := c.rpc("label.set_torrent", args, rencode.Dictionary{})
 	if err != nil {
 		return err
 	}
