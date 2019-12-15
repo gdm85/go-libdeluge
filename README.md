@@ -58,82 +58,82 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 
 ## RPC API supported methods
 
-[x] `daemon.login`
-[x] `daemon.info`
-[ ] `daemon.authorized_call`
-[x] `daemon.get_method_list`
-[ ] `daemon.get_version`
-[ ] `daemon.shutdown`
-[ ] `core.add_torrent_file`
-[ ] `core.add_torrent_file_async`
-[ ] `core.add_torrent_files`
-[x] `core.add_torrent_magnet`
-[x] `core.add_torrent_url`
-[ ] `core.connect_peer`
-[ ] `core.create_account`
-[ ] `core.create_torrent`
-[ ] `core.disable_plugin`
-[ ] `core.enable_plugin`
-[ ] `core.force_reannounce`
-[ ] `core.force_recheck`
-[ ] `core.get_auth_levels_mappings`
-[ ] `core.get_available_plugins`
-[ ] `core.get_completion_paths`
-[ ] `core.get_config`
-[ ] `core.get_config_value`
-[ ] `core.get_config_values`
-[ ] `core.get_enabled_plugins`
-[ ] `core.get_external_ip`
-[ ] `core.get_filter_tree`
-[x] `core.get_free_space`
-[ ] `core.get_known_accounts`
-[ ] `core.get_libtorrent_version`
-[ ] `core.get_listen_port`
-[ ] `core.get_path_size`
-[ ] `core.get_proxy`
-[x] `core.get_session_state`
-[ ] `core.get_session_status`
-[ ] `core.get_torrent_status`
-[x] `core.get_torrents_status`
-[ ] `core.glob`
-[ ] `core.is_session_paused`
-[x] `core.move_storage`
-[ ] `core.pause_session`
-[ ] `core.pause_torrent`
-[ ] `core.pause_torrents`
-[ ] `core.prefetch_magnet_metadata`
-[ ] `core.queue_bottom`
-[ ] `core.queue_down`
-[ ] `core.queue_top`
-[ ] `core.queue_up`
-[ ] `core.remove_account`
-[x] `core.remove_torrent`
-[ ] `core.remove_torrents`
-[ ] `core.rename_files`
-[ ] `core.rename_folder`
-[ ] `core.rescan_plugins`
-[ ] `core.resume_session`
-[ ] `core.resume_torrent`
-[ ] `core.resume_torrents`
-[ ] `core.set_config`
-[ ] `core.set_torrent_auto_managed`
-[ ] `core.set_torrent_file_priorities`
-[ ] `core.set_torrent_max_connections`
-[ ] `core.set_torrent_max_download_speed`
-[ ] `core.set_torrent_max_upload_slots`
-[ ] `core.set_torrent_max_upload_speed`
-[ ] `core.set_torrent_move_completed`
-[ ] `core.set_torrent_move_completed_path`
-[ ] `core.set_torrent_options`
-[ ] `core.set_torrent_prioritize_first_last`
-[ ] `core.set_torrent_remove_at_ratio`
-[ ] `core.set_torrent_stop_at_ratio`
-[ ] `core.set_torrent_stop_ratio`
-[x] `core.set_torrent_trackers`
-[ ] `core.test_listen_port`
-[ ] `core.update_account`
-[ ] `core.upload_plugin`
+* [x] `daemon.login`
+* [x] `daemon.info`
+* [ ] `daemon.authorized_call`
+* [x] `daemon.get_method_list`
+* [ ] `daemon.get_version`
+* [ ] `daemon.shutdown`
+* [ ] `core.add_torrent_file`
+* [ ] `core.add_torrent_file_async`
+* [ ] `core.add_torrent_files`
+* [x] `core.add_torrent_magnet`
+* [x] `core.add_torrent_url`
+* [ ] `core.connect_peer`
+* [ ] `core.create_account`
+* [ ] `core.create_torrent`
+* [ ] `core.disable_plugin`
+* [ ] `core.enable_plugin`
+* [ ] `core.force_reannounce`
+* [ ] `core.force_recheck`
+* [ ] `core.get_auth_levels_mappings`
+* [ ] `core.get_available_plugins`
+* [ ] `core.get_completion_paths`
+* [ ] `core.get_config`
+* [ ] `core.get_config_value`
+* [ ] `core.get_config_values`
+* [ ] `core.get_enabled_plugins`
+* [ ] `core.get_external_ip`
+* [ ] `core.get_filter_tree`
+* [x] `core.get_free_space`
+* [ ] `core.get_known_accounts`
+* [ ] `core.get_libtorrent_version`
+* [ ] `core.get_listen_port`
+* [ ] `core.get_path_size`
+* [ ] `core.get_proxy`
+* [x] `core.get_session_state`
+* [ ] `core.get_session_status`
+* [ ] `core.get_torrent_status`
+* [x] `core.get_torrents_status`
+* [ ] `core.glob`
+* [ ] `core.is_session_paused`
+* [x] `core.move_storage`
+* [ ] `core.pause_session`
+* [ ] `core.pause_torrent`
+* [ ] `core.pause_torrents`
+* [ ] `core.prefetch_magnet_metadata`
+* [ ] `core.queue_bottom`
+* [ ] `core.queue_down`
+* [ ] `core.queue_top`
+* [ ] `core.queue_up`
+* [ ] `core.remove_account`
+* [x] `core.remove_torrent`
+* [ ] `core.remove_torrents`
+* [ ] `core.rename_files`
+* [ ] `core.rename_folder`
+* [ ] `core.rescan_plugins`
+* [ ] `core.resume_session`
+* [ ] `core.resume_torrent`
+* [ ] `core.resume_torrents`
+* [ ] `core.set_config`
+* [ ] `core.set_torrent_auto_managed`
+* [ ] `core.set_torrent_file_priorities`
+* [ ] `core.set_torrent_max_connections`
+* [ ] `core.set_torrent_max_download_speed`
+* [ ] `core.set_torrent_max_upload_slots`
+* [ ] `core.set_torrent_max_upload_speed`
+* [ ] `core.set_torrent_move_completed`
+* [ ] `core.set_torrent_move_completed_path`
+* [ ] `core.set_torrent_options`
+* [ ] `core.set_torrent_prioritize_first_last`
+* [ ] `core.set_torrent_remove_at_ratio`
+* [ ] `core.set_torrent_stop_at_ratio`
+* [ ] `core.set_torrent_stop_ratio`
+* [x] `core.set_torrent_trackers`
+* [ ] `core.test_listen_port`
+* [ ] `core.update_account`
+* [ ] `core.upload_plugin`
 
 ### Plugin methods
 
-[x] `label.set_torrent`
+* [x] `label.set_torrent`
