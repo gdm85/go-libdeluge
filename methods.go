@@ -100,6 +100,7 @@ var STATUS_KEYS = rencode.NewList(
 	"tracker_status",
 	"next_announce",
 	"name",
+	"label",
 	"total_size",
 	"progress",
 	"num_seeds",
@@ -230,4 +231,20 @@ func (c *Client) SessionState() ([]string, error) {
 	}
 
 	return result, nil
+}
+
+// SetLabel adds or replaces a label for a torrent with given hash
+func (c *Client) SetLabel(hash, label string) error {
+	var args rencode.List
+	args.Add(hash, label)
+
+	resp, err := c.rpc("label.set_torrent", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return nil
 }
