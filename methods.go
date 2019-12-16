@@ -273,6 +273,36 @@ func (c *Client) SetLabel(hash, label string) error {
 	return nil
 }
 
+// KnownAccounts returns all known usernames.
+func (c *Client) KnownAccounts() ([]string, error) {
+	resp, err := c.rpc("core.get_known_accounts", rencode.List{}, rencode.Dictionary{})
+	if err != nil {
+		return []string{}, err
+	}
+	if resp.IsError() {
+		return []string{}, resp.RPCError
+	}
+
+	var users rencode.List
+	err = resp.returnValue.Scan(&users)
+	if err != nil {
+		return []string{}, err
+	}
+	// users  now be a list of dictionaries, which each contain
+	// only one attribute: the username as a bytestring.
+
+	result := make([]string, users.Length())
+	for i, m := range users.Values() {
+		// get each list
+		var attrs = m.(rencode.Dictionary)
+		username := attrs.Values()[0] // first and only attribute
+
+		result[i] = string(username.([]byte))
+	}
+
+	return result, nil
+}
+
 // CreateAccount creates a new Deluge user with the supplied username,
 // password and permission level. The authenticated user must have an
 // authLevel 10 to succeed.
