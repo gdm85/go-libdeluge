@@ -297,3 +297,26 @@ func (c *Client) CreateAccount(username, password string, authLevel int) (bool, 
 	return success.(bool), nil
 }
 
+// UpdateAccount sets a new password and permission level for a account.
+// The authenticated user must have an authLevel of 10 to succeed.
+func (c *Client) UpdateAccount(username, password string, authLevel int) (bool, error) {
+	var args rencode.List
+	args.Add(username, password, authLevel)
+
+	resp, err := c.rpc("core.update_account", args, rencode.Dictionary{})
+	if err != nil {
+		return false, err
+	}
+	if resp.IsError() {
+		return false, resp.RPCError
+	}
+
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return false, ErrInvalidReturnValue
+	}
+	success := vals[0]
+
+	return success.(bool), nil
+}
+
