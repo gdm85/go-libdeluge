@@ -275,30 +275,30 @@ func (c *Client) SetLabel(hash, label string) error {
 
 // KnownAccounts returns all known accounts, including password and
 // permission levels.
-func (c *Client) KnownAccounts() ([]Account, error) {
+func (c *Client) KnownAccounts() ([]*Account, error) {
 	resp, err := c.rpc("core.get_known_accounts", rencode.List{}, rencode.Dictionary{})
-
-	var accounts []Account
-
 	if err != nil {
-		return accounts, err
+		return nil, err
 	}
 	if resp.IsError() {
-		return accounts, resp.RPCError
+		return nil, resp.RPCError
 	}
 
 	var users rencode.List
 	err = resp.returnValue.Scan(&users)
 	if err != nil {
-		return accounts, err
+		return nil, err
 	}
-	// users now is a list of dictionaries, which each contain
-	// only one attribute: the username as a bytestring.
 
+	// users is now a list of dictionaries, each containing
+	// only one attribute: the username as a bytestring.
+	var accounts []*Account
 	for _, u := range users.Values() {
 		// get each list
-		var account Account
-		account.fromDictionary(u.(rencode.Dictionary))
+		account, err := NewAccount(u)
+		if err != nil {
+			return nil, err
+		}
 		accounts = append(accounts, account)
 	}
 
@@ -352,7 +352,7 @@ func (c *Client) RemoveAccount(username string) (bool, error) {
 	var args rencode.List
 	args.Add(username)
 
-	// perform login
+	// remove account
 	resp, err := c.rpc("core.remove_account", args, rencode.Dictionary{})
 	if err != nil {
 		return false, err
