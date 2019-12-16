@@ -173,7 +173,13 @@ func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStat
 	return result, nil
 }
 
+// DeleteTorrent provides compatibility for the renamed RemoveTorrent method.
 func (c *Client) DeleteTorrent(id string) (bool, error) {
+	return c.RemoveTorrent(id)
+}
+
+// RemoveTorrent removes a single torrent, returning true if successful.
+func (c *Client) RemoveTorrent(id string) (bool, error) {
 	var args rencode.List
 	args.Add(id, true)
 
@@ -186,7 +192,6 @@ func (c *Client) DeleteTorrent(id string) (bool, error) {
 		return false, resp.RPCError
 	}
 
-	// returned hash may be nil if torrent was already added
 	vals := resp.returnValue.Values()
 	if len(vals) == 0 {
 		return false, ErrInvalidReturnValue
