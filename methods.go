@@ -205,9 +205,10 @@ func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStat
 	return result, nil
 }
 
-func (c *Client) DeleteTorrent(id string) (bool, error) {
+// RemoveTorrent removes a single torrent, returning true if successful.
+func (c *Client) RemoveTorrent(id string, rmFiles bool) (bool, error) {
 	var args rencode.List
-	args.Add(id, true)
+	args.Add(id, rmFiles)
 
 	// perform login
 	resp, err := c.rpc("core.remove_torrent", args, rencode.Dictionary{})
@@ -218,7 +219,6 @@ func (c *Client) DeleteTorrent(id string) (bool, error) {
 		return false, resp.RPCError
 	}
 
-	// returned hash may be nil if torrent was already added
 	vals := resp.returnValue.Values()
 	if len(vals) == 0 {
 		return false, ErrInvalidReturnValue
