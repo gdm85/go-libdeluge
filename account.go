@@ -14,7 +14,9 @@
 
 package delugeclient
 
-import "github.com/gdm85/go-rencode"
+import (
+	"github.com/gdm85/go-rencode"
+)
 
 // Account is a user account inside the auth file.
 type Account struct {
@@ -23,21 +25,21 @@ type Account struct {
 	AuthLevel AuthLevel
 }
 
-func NewAccount(u interface{}) {
+func NewAccount(u interface{}) (*Account, error) {
 	dict, ok := u.(rencode.Dictionary)
 	if !ok {
 		return nil, ErrInvalidListResult
 	}
-	values := dict.Values()
-	if len(values) != 3 {
+	values, err := dict.Zip()
+	if err != nil {
 		return nil, ErrInvalidListResult
 	}
 
 	var a Account
 	//TODO: use keys instead of indexes
-	a.Username = string(values[0].([]byte))
-	a.Password = string(values[1].([]byte))
-	a.AuthLevel = AuthLevel(values[2].([]byte))
+	a.Username = string(values["username"].([]byte))
+	a.Password = string(values["password"].([]byte))
+	a.AuthLevel = AuthLevel(values["authlevel"].([]byte))
 
 	return &a, nil
 }
