@@ -288,7 +288,7 @@ func (c *Client) KnownAccounts() ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
-	// users  now be a list of dictionaries, which each contain
+	// users now is a list of dictionaries, which each contain
 	// only one attribute: the username as a bytestring.
 
 	result := make([]string, users.Length())
