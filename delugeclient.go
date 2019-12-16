@@ -67,9 +67,9 @@ type DelugeClient interface {
 	SetTorrentTracker(id, tracker string) error
 	SessionState() ([]string, error)
 	SetLabel(hash, label string) error
-	KnownAccounts() ([]string, error)
-	CreateAccount(username, password string, authLevel AuthLevel) (bool, error)
-	UpdateAccount(username, password string, authLevel AuthLevel) (bool, error)
+	KnownAccounts() ([]Account, error)
+	CreateAccount(account Account) (bool, error)
+	UpdateAccount(account Account) (bool, error)
 	RemoveAccount(username string) (bool, error)
 }
 

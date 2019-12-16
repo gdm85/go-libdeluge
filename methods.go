@@ -273,49 +273,43 @@ func (c *Client) SetLabel(hash, label string) error {
 	return nil
 }
 
-// KnownAccounts returns all known usernames.
-func (c *Client) KnownAccounts() ([]string, error) {
+// KnownAccounts returns all known accounts, including password and
+// permission levels.
+func (c *Client) KnownAccounts() ([]Account, error) {
 	resp, err := c.rpc("core.get_known_accounts", rencode.List{}, rencode.Dictionary{})
+
+	var accounts []Account
+
 	if err != nil {
-		return []string{}, err
+		return accounts, err
 	}
 	if resp.IsError() {
-		return []string{}, resp.RPCError
+		return accounts, resp.RPCError
 	}
 
 	var users rencode.List
 	err = resp.returnValue.Scan(&users)
 	if err != nil {
-		return []string{}, err
+		return accounts, err
 	}
 	// users now is a list of dictionaries, which each contain
 	// only one attribute: the username as a bytestring.
 
-	result := make([]string, users.Length())
-	for i, m := range users.Values() {
+	for _, u := range users.Values() {
 		// get each list
-		var attrs = m.(rencode.Dictionary)
-		username := attrs.Values()[0] // first and only attribute
-
-		result[i] = string(username.([]byte))
+		var account Account
+		account.fromDictionary(u.(rencode.Dictionary))
+		accounts = append(accounts, account)
 	}
 
-	return result, nil
+	return accounts, nil
 }
 
 // CreateAccount creates a new Deluge user with the supplied username,
 // password and permission level. The authenticated user must have an
 // authLevel of ADMIN to succeed.
-func (c *Client) CreateAccount(username, password string, authLevel AuthLevel) (bool, error) {
-	var account rencode.List
-	account.Add(username)
-	account.Add(password)
-	account.Add(string(authLevel))
-
-	var args rencode.List
-	args.Add(account)
-
-	resp, err := c.rpc("core.create_account", account, rencode.Dictionary{})
+func (c *Client) CreateAccount(account Account) (bool, error) {
+	resp, err := c.rpc("core.create_account", account.toList(), rencode.Dictionary{})
 	if err != nil {
 		return false, err
 	}
@@ -334,13 +328,8 @@ func (c *Client) CreateAccount(username, password string, authLevel AuthLevel) (
 
 // UpdateAccount sets a new password and permission level for a account.
 // The authenticated user must have an authLevel of ADMIN to succeed.
-func (c *Client) UpdateAccount(username, password string, authLevel AuthLevel) (bool, error) {
-	var args rencode.List
-	args.Add(username)
-	args.Add(password)
-	args.Add(string(authLevel))
-
-	resp, err := c.rpc("core.update_account", args, rencode.Dictionary{})
+func (c *Client) UpdateAccount(account Account) (bool, error) {
+	resp, err := c.rpc("core.update_account", account.toList(), rencode.Dictionary{})
 	if err != nil {
 		return false, err
 	}
