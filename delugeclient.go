@@ -56,6 +56,7 @@ type DelugeClient interface {
 	SetLabel(hash, label string) error
 	CreateAccount(username, password string, authLevel int) (bool, error)
 	UpdateAccount(username, password string, authLevel int) (bool, error)
+	RemoveAccount(username string) (bool, error)
 }
 
 type NativeDelugeClient interface {

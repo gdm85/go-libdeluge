@@ -320,3 +320,26 @@ func (c *Client) UpdateAccount(username, password string, authLevel int) (bool, 
 	return success.(bool), nil
 }
 
+// RemoveAccount will delete an existing username.
+// The authenticated user must have an authLevel of 10 to succeed.
+func (c *Client) RemoveAccount(username string) (bool, error) {
+	var args rencode.List
+	args.Add(username)
+
+	// perform login
+	resp, err := c.rpc("core.remove_account", args, rencode.Dictionary{})
+	if err != nil {
+		return false, err
+	}
+	if resp.IsError() {
+		return false, resp.RPCError
+	}
+
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return false, ErrInvalidReturnValue
+	}
+	success := vals[0]
+
+	return success.(bool), nil
+}
