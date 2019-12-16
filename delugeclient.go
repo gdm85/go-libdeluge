@@ -31,6 +31,19 @@ import (
 	"github.com/gdm85/go-rencode"
 )
 
+// AuthLevel is a Auth Level string understood by Deluge
+type AuthLevel string
+
+// The auth level names, as defined in
+// https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/authmanager.py#L33-L37
+const (
+	AuthLevelNone     AuthLevel = "NONE"
+	AuthLevelReadonly AuthLevel = "READONLY"
+	AuthLevelNormal   AuthLevel = "NORMAL"
+	AuthLevelAdmin    AuthLevel = "ADMIN"
+	AuthLevelDefault  AuthLevel = AuthLevelNormal
+)
+
 const (
 	DefaultReadWriteTimeout = time.Second * 30
 )
@@ -55,6 +68,8 @@ type DelugeClient interface {
 	SessionState() ([]string, error)
 	SetLabel(hash, label string) error
 	KnownAccounts() ([]string, error)
+	CreateAccount(username, password string, authLevel AuthLevel) (bool, error)
+	UpdateAccount(username, password string, authLevel AuthLevel) (bool, error)
 	RemoveAccount(username string) (bool, error)
 }
 

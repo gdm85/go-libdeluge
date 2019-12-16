@@ -305,12 +305,17 @@ func (c *Client) KnownAccounts() ([]string, error) {
 
 // CreateAccount creates a new Deluge user with the supplied username,
 // password and permission level. The authenticated user must have an
-// authLevel 10 to succeed.
-func (c *Client) CreateAccount(username, password string, authLevel int) (bool, error) {
-	var args rencode.List
-	args.Add(username, password, authLevel)
+// authLevel of ADMIN to succeed.
+func (c *Client) CreateAccount(username, password string, authLevel AuthLevel) (bool, error) {
+	var account rencode.List
+	account.Add(username)
+	account.Add(password)
+	account.Add(string(authLevel))
 
-	resp, err := c.rpc("core.create_account", args, rencode.Dictionary{})
+	var args rencode.List
+	args.Add(account)
+
+	resp, err := c.rpc("core.create_account", account, rencode.Dictionary{})
 	if err != nil {
 		return false, err
 	}
@@ -328,10 +333,12 @@ func (c *Client) CreateAccount(username, password string, authLevel int) (bool, 
 }
 
 // UpdateAccount sets a new password and permission level for a account.
-// The authenticated user must have an authLevel of 10 to succeed.
-func (c *Client) UpdateAccount(username, password string, authLevel int) (bool, error) {
+// The authenticated user must have an authLevel of ADMIN to succeed.
+func (c *Client) UpdateAccount(username, password string, authLevel AuthLevel) (bool, error) {
 	var args rencode.List
-	args.Add(username, password, authLevel)
+	args.Add(username)
+	args.Add(password)
+	args.Add(string(authLevel))
 
 	resp, err := c.rpc("core.update_account", args, rencode.Dictionary{})
 	if err != nil {
@@ -351,7 +358,7 @@ func (c *Client) UpdateAccount(username, password string, authLevel int) (bool, 
 }
 
 // RemoveAccount will delete an existing username.
-// The authenticated user must have an authLevel of 10 to succeed.
+// The authenticated user must have an authLevel of ADMIN to succeed.
 func (c *Client) RemoveAccount(username string) (bool, error) {
 	var args rencode.List
 	args.Add(username)
