@@ -52,6 +52,7 @@ type DelugeClient interface {
 	TorrentsStatus() (map[string]*TorrentStatus, error)
 	MoveStorage(torrentIDs []string, dest string) error
 	SetTorrentTracker(id, tracker string) error
+	SetTorrentOptions(id string, options Options) error
 	SessionState() ([]string, error)
 	SetLabel(hash, label string) error
 }
@@ -70,7 +71,28 @@ func (e SerialMismatchError) Error() string {
 	return fmt.Sprintf("request/response serial id mismatch: got %d but %d expected", e.ReceivedID, e.ExpectedID)
 }
 
-// Options used when adding a torrent magnet/URL
+// Options used when adding a torrent magnet/URL.
+// Valid options are:
+//
+// * add_paused                   (bool)
+// * auto_managed                 (bool)
+// * download_location            (string)
+// * max_connections              (int)
+// * max_download_speed           (int)
+// * max_upload_slots             (int)
+// * max_upload_speed             (int)
+// * move_completed               (bool)
+// * move_completed_path          (string)
+// * pre_allocate_storage         (bool)
+// * prioritize_first_last_pieces (bool)
+// * remove_at_ratio              (float32)
+// * sequential_download          (bool)
+// * shared                       (bool)
+// * stop_at_ratio                (bool)
+// * stop_ratio                   (float32)
+// * super_seeding                (bool)
+//
+// (from  https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L167-L183)
 type Options map[string]interface{}
 
 // Settings defines all settings for a Deluge client connection.

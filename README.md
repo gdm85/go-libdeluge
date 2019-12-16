@@ -124,7 +124,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.set_torrent_max_upload_speed`
 * [ ] `core.set_torrent_move_completed`
 * [ ] `core.set_torrent_move_completed_path`
-* [ ] `core.set_torrent_options`
+* [x] `core.set_torrent_options`
 * [ ] `core.set_torrent_prioritize_first_last`
 * [ ] `core.set_torrent_remove_at_ratio`
 * [ ] `core.set_torrent_stop_at_ratio`

@@ -233,6 +233,22 @@ func (c *Client) SessionState() ([]string, error) {
 	return result, nil
 }
 
+// SetTorrentOptions updates options for the torrent with the given hash.
+func (c *Client) SetTorrentOptions(id string, options Options) error {
+	var args rencode.List
+	args.Add(id, mapToRencodeDictionary(options))
+
+	resp, err := c.rpc("core.set_torrent_options", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return nil
+}
+
 // SetTorrentTracker sets the primary tracker for the torrent with the
 // given hash to be `trackerURL`.
 func (c *Client) SetTorrentTracker(id, trackerURL string) error {
