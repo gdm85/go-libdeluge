@@ -276,6 +276,10 @@ func (c *Client) SetLabel(hash, label string) error {
 // KnownAccounts returns all known accounts, including password and
 // permission levels.
 func (c *Client) KnownAccounts() ([]*Account, error) {
+	if !c.settings.V2Daemon {
+		return nil, ErrUnsupported
+	}
+
 	resp, err := c.rpc("core.get_known_accounts", rencode.List{}, rencode.Dictionary{})
 	if err != nil {
 		return nil, err
@@ -294,7 +298,6 @@ func (c *Client) KnownAccounts() ([]*Account, error) {
 	// only one attribute: the username as a bytestring.
 	var accounts []*Account
 	for _, u := range users.Values() {
-		// get each list
 		account, err := NewAccount(u)
 		if err != nil {
 			return nil, err
@@ -309,6 +312,10 @@ func (c *Client) KnownAccounts() ([]*Account, error) {
 // password and permission level. The authenticated user must have an
 // authLevel of ADMIN to succeed.
 func (c *Client) CreateAccount(account Account) (bool, error) {
+	if !c.settings.V2Daemon {
+		return false, ErrUnsupported
+	}
+
 	resp, err := c.rpc("core.create_account", account.toList(), rencode.Dictionary{})
 	if err != nil {
 		return false, err
@@ -329,6 +336,10 @@ func (c *Client) CreateAccount(account Account) (bool, error) {
 // UpdateAccount sets a new password and permission level for a account.
 // The authenticated user must have an authLevel of ADMIN to succeed.
 func (c *Client) UpdateAccount(account Account) (bool, error) {
+	if !c.settings.V2Daemon {
+		return false, ErrUnsupported
+	}
+
 	resp, err := c.rpc("core.update_account", account.toList(), rencode.Dictionary{})
 	if err != nil {
 		return false, err
@@ -349,10 +360,13 @@ func (c *Client) UpdateAccount(account Account) (bool, error) {
 // RemoveAccount will delete an existing username.
 // The authenticated user must have an authLevel of ADMIN to succeed.
 func (c *Client) RemoveAccount(username string) (bool, error) {
+	if !c.settings.V2Daemon {
+		return false, ErrUnsupported
+	}
+
 	var args rencode.List
 	args.Add(username)
 
-	// remove account
 	resp, err := c.rpc("core.remove_account", args, rencode.Dictionary{})
 	if err != nil {
 		return false, err
