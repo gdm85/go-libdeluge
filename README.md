@@ -70,7 +70,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [x] `core.add_torrent_magnet`
 * [x] `core.add_torrent_url`
 * [ ] `core.connect_peer`
-* [ ] `core.create_account`
+* [x] `core.create_account`
 * [ ] `core.create_torrent`
 * [ ] `core.disable_plugin`
 * [ ] `core.enable_plugin`

@@ -272,3 +272,28 @@ func (c *Client) SetLabel(hash, label string) error {
 
 	return nil
 }
+
+// CreateAccount creates a new Deluge user with the supplied username,
+// password and permission level. The authenticated user must have an
+// authLevel 10 to succeed.
+func (c *Client) CreateAccount(username, password string, authLevel int) (bool, error) {
+	var args rencode.List
+	args.Add(username, password, authLevel)
+
+	resp, err := c.rpc("core.create_account", args, rencode.Dictionary{})
+	if err != nil {
+		return false, err
+	}
+	if resp.IsError() {
+		return false, resp.RPCError
+	}
+
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return false, ErrInvalidReturnValue
+	}
+	success := vals[0]
+
+	return success.(bool), nil
+}
+

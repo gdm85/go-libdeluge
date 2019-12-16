@@ -54,6 +54,7 @@ type DelugeClient interface {
 	SetTorrentTracker(id, tracker string) error
 	SessionState() ([]string, error)
 	SetLabel(hash, label string) error
+	CreateAccount(username, password string, authLevel int) (bool, error)
 }
 
 type NativeDelugeClient interface {
