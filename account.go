@@ -25,23 +25,21 @@ type Account struct {
 	AuthLevel AuthLevel
 }
 
-func NewAccount(u interface{}) (*Account, error) {
-	dict, ok := u.(rencode.Dictionary)
-	if !ok {
-		return nil, ErrInvalidListResult
-	}
+func(a *Account) fromDictionary(dict rencode.Dictionary) error {
 	values, err := dict.Zip()
 	if err != nil {
-		return nil, ErrInvalidListResult
+		return err
+	}
+	if len(values) < 3 {
+		return ErrInvalidReturnValue
 	}
 
 	var a Account
-	//TODO: use keys instead of indexes
 	a.Username = string(values["username"].([]byte))
 	a.Password = string(values["password"].([]byte))
 	a.AuthLevel = AuthLevel(values["authlevel"].([]byte))
-
-	return &a, nil
+	
+	return nil
 }
 
 func (a Account) toList() rencode.List {
