@@ -295,14 +295,20 @@ func (c *Client) KnownAccounts() ([]*Account, error) {
 	}
 
 	// users is now a list of dictionaries, each containing
-	// only one attribute: the username as a bytestring.
+	// three []byte attributes: username, password and auth level
 	var accounts []*Account
 	for _, u := range users.Values() {
-		account, err := NewAccount(u)
+		dict, ok := u.(rencode.Dictionary)
+		if !ok {
+			return nil, ErrInvalidListResult
+		}
+
+		var a Account
+		err := a.fromDictionary(dict)
 		if err != nil {
 			return nil, err
 		}
-		accounts = append(accounts, account)
+		accounts = append(accounts, a)
 	}
 
 	return accounts, nil
