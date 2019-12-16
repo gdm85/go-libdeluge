@@ -116,19 +116,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.resume_torrent`
 * [ ] `core.resume_torrents`
 * [ ] `core.set_config`
-* [ ] `core.set_torrent_auto_managed`
-* [ ] `core.set_torrent_file_priorities`
-* [ ] `core.set_torrent_max_connections`
-* [ ] `core.set_torrent_max_download_speed`
-* [ ] `core.set_torrent_max_upload_slots`
-* [ ] `core.set_torrent_max_upload_speed`
-* [ ] `core.set_torrent_move_completed`
-* [ ] `core.set_torrent_move_completed_path`
-* [ ] `core.set_torrent_options`
-* [ ] `core.set_torrent_prioritize_first_last`
-* [ ] `core.set_torrent_remove_at_ratio`
-* [ ] `core.set_torrent_stop_at_ratio`
-* [ ] `core.set_torrent_stop_ratio`
+* [x] `core.set_torrent_options`
 * [x] `core.set_torrent_trackers`
 * [ ] `core.test_listen_port`
 * [ ] `core.update_account`
