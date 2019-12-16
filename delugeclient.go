@@ -31,7 +31,7 @@ import (
 	"github.com/gdm85/go-rencode"
 )
 
-// AuthLevel is a Auth Level string understood by Deluge
+// AuthLevel is an Auth Level string understood by Deluge
 type AuthLevel string
 
 // The auth level names, as defined in
