@@ -175,13 +175,13 @@ func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStat
 
 // DeleteTorrent provides compatibility for the renamed RemoveTorrent method.
 func (c *Client) DeleteTorrent(id string) (bool, error) {
-	return c.RemoveTorrent(id)
+	return c.RemoveTorrent(id, true)
 }
 
 // RemoveTorrent removes a single torrent, returning true if successful.
-func (c *Client) RemoveTorrent(id string) (bool, error) {
+func (c *Client) RemoveTorrent(id string, rmFiles bool) (bool, error) {
 	var args rencode.List
-	args.Add(id, true)
+	args.Add(id, rmFiles)
 
 	// perform login
 	resp, err := c.rpc("core.remove_torrent", args, rencode.Dictionary{})
