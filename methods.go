@@ -275,7 +275,7 @@ func (c *Client) SetLabel(hash, label string) error {
 
 // KnownAccounts returns all known accounts, including password and
 // permission levels.
-func (c *Client) KnownAccounts() ([]*Account, error) {
+func (c *Client) KnownAccounts() ([]Account, error) {
 	if !c.settings.V2Daemon {
 		return nil, ErrUnsupported
 	}
@@ -296,7 +296,7 @@ func (c *Client) KnownAccounts() ([]*Account, error) {
 
 	// users is now a list of dictionaries, each containing
 	// three []byte attributes: username, password and auth level
-	var accounts []*Account
+	var accounts []Account
 	for _, u := range users.Values() {
 		dict, ok := u.(rencode.Dictionary)
 		if !ok {
@@ -308,7 +308,7 @@ func (c *Client) KnownAccounts() ([]*Account, error) {
 		if err != nil {
 			return nil, err
 		}
-		accounts = append(accounts, &a)
+		accounts = append(accounts, a)
 	}
 
 	return accounts, nil
