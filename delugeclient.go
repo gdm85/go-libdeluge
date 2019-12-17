@@ -12,6 +12,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+// Package delugeclient allows calling native RPC methods on a remote
+// deluge server.
 package delugeclient
 
 import (
@@ -53,7 +55,7 @@ var (
 	ErrAlreadyClosed      = errors.New("connection is already closed")
 	ErrInvalidListResult  = errors.New("expected dictionary as list response")
 	ErrInvalidReturnValue = errors.New("invalid return value")
-	ErrUnsupportedV1        = errors.New("method not supported by deluge daemon v1")
+	ErrUnsupportedV1      = errors.New("method not supported by deluge daemon v1")
 )
 
 type DelugeClient interface {
