@@ -16,6 +16,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 package delugeclient
 
 import (
+	"fmt"
+
 	"github.com/gdm85/go-rencode"
 )
 
@@ -205,12 +207,77 @@ func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStat
 	return result, nil
 }
 
+// TorrentError is a tuple of a torrent and an error message, returned by
+// methods that manipulate many torrents at once.
+type TorrentError struct {
+	// ID is the hash of the torrent that experienced an error
+	ID string
+	// Message is a string message
+	Message string
+}
+
+// Error satisfies the error interface
+func (t TorrentError) Error() string {
+	return fmt.Sprintf("<%s>: '%s'")
+}
+
+// RemoveTorrents tries to remove multiple torrents at once. If successful
+// an empty list is returned with a nil error.
+// If errors were encountered, the resulting list will be a list of
+// TorrentErrors.
+//
+// Will also try to delete all downloaded files for the torrents, If
+// `rmFiles` is set, otherwise they will need to be deleted manually later.
+func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, error) {
+	var torrents rencode.List
+	for i := range ids {
+		torrents.Add(ids[i])
+	}
+
+	var args rencode.List
+	args.Add(torrents, rmFiles)
+
+	resp, err := c.rpc("core.remove_torrents", args, rencode.Dictionary{})
+	if err != nil {
+		return []TorrentError{}, err
+	}
+	if resp.IsError() {
+		return []TorrentError{}, resp.RPCError
+	}
+
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return []TorrentError{}, ErrInvalidReturnValue
+	}
+	failedList := vals[0].(rencode.List)
+
+	var torrentErrors []TorrentError
+
+	// Iterate through the list of errors that have occured, and
+	// convert each of them into a more typesafe format.
+	for _, e := range failedList.Values() {
+		// TODO: check cast success
+		failedEntry := e.(rencode.List)
+		failedTuple := failedEntry.Values()
+		torrentError := TorrentError{
+			ID:      string(failedTuple[0].([]byte)),
+			Message: string(failedTuple[1].([]byte)),
+		}
+
+		torrentErrors = append(torrentErrors, torrentError)
+	}
+
+	return torrentErrors, nil
+}
+
 // RemoveTorrent removes a single torrent, returning true if successful.
+//
+// Will also try to delete all downloaded files for the torrent, If
+// `rmFiles` is set, otherwise they will need to be deleted manually later.
 func (c *Client) RemoveTorrent(id string, rmFiles bool) (bool, error) {
 	var args rencode.List
 	args.Add(id, rmFiles)
 
-	// perform login
 	resp, err := c.rpc("core.remove_torrent", args, rencode.Dictionary{})
 	if err != nil {
 		return false, err
