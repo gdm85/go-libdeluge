@@ -25,7 +25,7 @@ type Account struct {
 	AuthLevel AuthLevel
 }
 
-func(a *Account) fromDictionary(dict rencode.Dictionary) error {
+func (a *Account) fromDictionary(dict rencode.Dictionary) error {
 	values, err := dict.Zip()
 	if err != nil {
 		return err
@@ -34,11 +34,10 @@ func(a *Account) fromDictionary(dict rencode.Dictionary) error {
 		return ErrInvalidReturnValue
 	}
 
-	var a Account
 	a.Username = string(values["username"].([]byte))
 	a.Password = string(values["password"].([]byte))
 	a.AuthLevel = AuthLevel(values["authlevel"].([]byte))
-	
+
 	return nil
 }
 

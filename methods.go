@@ -308,7 +308,7 @@ func (c *Client) KnownAccounts() ([]*Account, error) {
 		if err != nil {
 			return nil, err
 		}
-		accounts = append(accounts, a)
+		accounts = append(accounts, &a)
 	}
 
 	return accounts, nil
