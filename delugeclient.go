@@ -26,6 +26,7 @@ import (
 	"log"
 	"math"
 	"net"
+	"reflect"
 	"time"
 
 	"github.com/gdm85/go-rencode"
@@ -46,14 +47,14 @@ type DelugeClient interface {
 	MethodsList() ([]string, error)
 	DaemonVersion() (string, error)
 	GetFreeSpace(string) (int64, error)
-	AddTorrentMagnet(magnetURI string, options Options) (string, error)
-	AddTorrentURL(url string, options Options) (string, error)
+	AddTorrentMagnet(magnetURI string, options *Options) (string, error)
+	AddTorrentURL(url string, options *Options) (string, error)
 	RemoveTorrent(id string, rmFiles bool) (bool, error)
 	TorrentsStatus() (map[string]*TorrentStatus, error)
 	TorrentStatus(id string) (*TorrentStatus, error)
 	MoveStorage(torrentIDs []string, dest string) error
 	SetTorrentTracker(id, tracker string) error
-	SetTorrentOptions(id string, options Options) error
+	SetTorrentOptions(id string, options *Options) error
 	SessionState() ([]string, error)
 	SetLabel(hash, label string) error
 }
@@ -73,28 +74,70 @@ func (e SerialMismatchError) Error() string {
 }
 
 // Options used when adding a torrent magnet/URL.
-// Valid options are:
-//
-// * add_paused                   (bool)
-// * auto_managed                 (bool)
-// * download_location            (string)
-// * max_connections              (int)
-// * max_download_speed           (int)
-// * max_upload_slots             (int)
-// * max_upload_speed             (int)
-// * move_completed               (bool)
-// * move_completed_path          (string)
-// * pre_allocate_storage         (bool)
-// * prioritize_first_last_pieces (bool)
-// * remove_at_ratio              (float32)
-// * sequential_download          (bool)
-// * shared                       (bool)
-// * stop_at_ratio                (bool)
-// * stop_ratio                   (float32)
-// * super_seeding                (bool)
-//
-// (from  https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L167-L183)
-type Options map[string]interface{}
+// Valid options for v2: https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L167-L183
+// Valid options for v1: https://github.com/deluge-torrent/deluge/blob/1.3-stable/deluge/core/torrent.py#L83-L96
+type Options struct {
+	MaxConnections            int
+	MaxUploadSlots            int
+	MaxUploadSpeed            int
+	MaxDownloadSpeed          int
+	PrioritizeFirstLastPieces bool
+	PreAllocateStorage        bool // compact_allocation for v1
+	DownloadLocation          string
+	AutoManaged               bool
+	StopAtRatio               bool
+	StopRatio                 float32
+	RemoveAtRatio             float32
+	MoveCompleted             bool
+	MoveCompletedPath         string
+	AddPaused                 bool
+
+	// V2 defines v2-only options
+	V2 V2Options
+}
+
+type V2Options struct {
+	SequentialDownload bool
+	Shared             bool
+	SuperSeeding       bool
+}
+
+func (o *Options) toDictionary(v2daemon bool) rencode.Dictionary {
+	var dict rencode.Dictionary
+	if o == nil {
+		return dict
+	}
+
+	v := reflect.ValueOf(*o)
+	t := v.Type()
+
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		if f.Kind() == reflect.Struct {
+			// there is a single struct field, V2, which is conditionally parsed after this loop
+			continue
+		}
+		name := rencode.ToSnakeCase(t.Field(i).Name)
+		if !v2daemon {
+			if name == "pre_allocate_storage" {
+				name = "compact_allocation"
+			}
+		}
+		dict.Add(name, f.Interface())
+	}
+
+	if v2daemon {
+		v := reflect.ValueOf(o.V2)
+		t := reflect.TypeOf(o.V2)
+		for i := 0; i < v.NumField(); i++ {
+			f := v.Field(i)
+			name := rencode.ToSnakeCase(t.Field(i).Name)
+			dict.Add(name, f.Interface())
+		}
+	}
+
+	return dict
+}
 
 // Settings defines all settings for a Deluge client connection.
 type Settings struct {
@@ -532,17 +575,6 @@ func (c *Client) DaemonVersion() (string, error) {
 	}
 
 	return info, nil
-}
-
-func mapToRencodeDictionary(m map[string]interface{}) rencode.Dictionary {
-	var dict rencode.Dictionary
-	if m != nil {
-		for k, v := range m {
-			dict.Add(k, v)
-		}
-	}
-
-	return dict
 }
 
 func sliceToRencodeList(s []string) rencode.List {

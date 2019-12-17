@@ -42,9 +42,9 @@ func (c *Client) GetFreeSpace(path string) (int64, error) {
 }
 
 // AddTorrentMagnet adds a torrent via magnet URI and returns the torrent hash.
-func (c *Client) AddTorrentMagnet(magnetURI string, options Options) (string, error) {
+func (c *Client) AddTorrentMagnet(magnetURI string, options *Options) (string, error) {
 	var args rencode.List
-	args.Add(magnetURI, mapToRencodeDictionary(options))
+	args.Add(magnetURI, options.toDictionary(c.settings.V2Daemon))
 
 	resp, err := c.rpc("core.add_torrent_magnet", args, rencode.Dictionary{})
 	if err != nil {
@@ -68,9 +68,9 @@ func (c *Client) AddTorrentMagnet(magnetURI string, options Options) (string, er
 }
 
 // AddTorrentURL adds a torrent via a URL and returns the torrent hash.
-func (c *Client) AddTorrentURL(url string, options Options) (string, error) {
+func (c *Client) AddTorrentURL(url string, options *Options) (string, error) {
 	var args rencode.List
-	args.Add(url, mapToRencodeDictionary(options))
+	args.Add(url, options.toDictionary(c.settings.V2Daemon))
 
 	resp, err := c.rpc("core.add_torrent_url", args, rencode.Dictionary{})
 	if err != nil {
@@ -266,9 +266,9 @@ func (c *Client) SessionState() ([]string, error) {
 }
 
 // SetTorrentOptions updates options for the torrent with the given hash.
-func (c *Client) SetTorrentOptions(id string, options Options) error {
+func (c *Client) SetTorrentOptions(id string, options *Options) error {
 	var args rencode.List
-	args.Add(id, mapToRencodeDictionary(options))
+	args.Add(id, options.toDictionary(c.settings.V2Daemon))
 
 	resp, err := c.rpc("core.set_torrent_options", args, rencode.Dictionary{})
 	if err != nil {

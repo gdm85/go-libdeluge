@@ -25,6 +25,8 @@ import (
 )
 
 func TestZlibEOF(t *testing.T) {
+	t.Parallel()
+
 	b := bytes.NewReader([]byte{120, 156, 59, 204, 200, 200, 5, 0, 3, 31, 0, 208})
 
 	zr, err := zlib.NewReader(b)
