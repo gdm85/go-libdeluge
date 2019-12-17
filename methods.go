@@ -228,6 +228,70 @@ func (c *Client) RemoveTorrent(id string, rmFiles bool) (bool, error) {
 	return success.(bool), nil
 }
 
+// PauseTorrents pauses a group of torrents with the given IDs.
+func (c *Client) PauseTorrents(ids []string) error {
+	var args rencode.List
+	args.Add(sliceToRencodeList(ids))
+
+	resp, err := c.rpc("core.pause_torrents", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return err
+}
+
+// PauseTorrent pauses a single torrent with the given ID.
+func (c *Client) PauseTorrent(id string) error {
+	var args rencode.List
+	args.Add(id)
+
+	resp, err := c.rpc("core.pause_torrent", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return err
+}
+
+// ResumeTorrents unpauses a group of torrents with the given IDs.
+func (c *Client) ResumeTorrents(ids []string) error {
+	var args rencode.List
+	args.Add(sliceToRencodeList(ids))
+
+	resp, err := c.rpc("core.resume_torrents", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return err
+}
+
+// ResumeTorrent unpauses a single torrent with the given ID.
+func (c *Client) ResumeTorrent(id string) error {
+	var args rencode.List
+	args.Add(id)
+
+	resp, err := c.rpc("core.resume_torrent", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return err
+}
+
 func (c *Client) MoveStorage(torrentIDs []string, dest string) error {
 	var args rencode.List
 	args.Add(sliceToRencodeList(torrentIDs), dest)

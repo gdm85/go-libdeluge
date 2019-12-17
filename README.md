@@ -99,8 +99,8 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.is_session_paused`
 * [x] `core.move_storage`
 * [ ] `core.pause_session`
-* [ ] `core.pause_torrent`
-* [ ] `core.pause_torrents`
+* [x] `core.pause_torrent`
+* [x] `core.pause_torrents`
 * [ ] `core.prefetch_magnet_metadata`
 * [ ] `core.queue_bottom`
 * [ ] `core.queue_down`
@@ -113,8 +113,8 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.rename_folder`
 * [ ] `core.rescan_plugins`
 * [ ] `core.resume_session`
-* [ ] `core.resume_torrent`
-* [ ] `core.resume_torrents`
+* [x] `core.resume_torrent`
+* [x] `core.resume_torrents`
 * [ ] `core.set_config`
 * [x] `core.set_torrent_options`
 * [x] `core.set_torrent_trackers`
