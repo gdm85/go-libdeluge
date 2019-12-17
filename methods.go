@@ -229,13 +229,8 @@ func (t TorrentError) Error() string {
 // Will also try to delete all downloaded files for the torrents, If
 // `rmFiles` is set, otherwise they will need to be deleted manually later.
 func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, error) {
-	var torrents rencode.List
-	for i := range ids {
-		torrents.Add(ids[i])
-	}
-
 	var args rencode.List
-	args.Add(torrents, rmFiles)
+	args.Add(sliceToRencodeList(ids), rmFiles)
 
 	resp, err := c.rpc("core.remove_torrents", args, rencode.Dictionary{})
 	if err != nil {

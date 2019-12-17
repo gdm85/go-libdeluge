@@ -108,7 +108,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.queue_up`
 * [x] `core.remove_account`
 * [x] `core.remove_torrent`
-* [ ] `core.remove_torrents`
+* [x] `core.remove_torrents`
 * [ ] `core.rename_files`
 * [ ] `core.rename_folder`
 * [ ] `core.rescan_plugins`

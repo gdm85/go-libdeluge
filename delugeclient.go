@@ -63,7 +63,7 @@ type DelugeClient interface {
 	GetFreeSpace(string) (int64, error)
 	AddTorrentMagnet(magnetURI string, options *Options) (string, error)
 	AddTorrentURL(url string, options *Options) (string, error)
-	RemoveTorrents(ids []string, rmFiles bool) ([][]string, error)
+	RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, error)
 	RemoveTorrent(id string, rmFiles bool) (bool, error)
 	TorrentsStatus() (map[string]*TorrentStatus, error)
 	TorrentStatus(id string) (*TorrentStatus, error)
