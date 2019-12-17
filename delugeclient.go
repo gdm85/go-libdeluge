@@ -32,6 +32,19 @@ import (
 	"github.com/gdm85/go-rencode"
 )
 
+// AuthLevel is an Auth Level string understood by Deluge
+type AuthLevel string
+
+// The auth level names, as defined in
+// https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/authmanager.py#L33-L37
+const (
+	AuthLevelNone     AuthLevel = "NONE"
+	AuthLevelReadonly AuthLevel = "READONLY"
+	AuthLevelNormal   AuthLevel = "NORMAL"
+	AuthLevelAdmin    AuthLevel = "ADMIN"
+	AuthLevelDefault  AuthLevel = AuthLevelNormal
+)
+
 const (
 	DefaultReadWriteTimeout = time.Second * 30
 )
@@ -41,6 +54,7 @@ var (
 	ErrAlreadyClosed      = errors.New("connection is already closed")
 	ErrInvalidListResult  = errors.New("expected dictionary as list response")
 	ErrInvalidReturnValue = errors.New("invalid return value")
+	ErrUnsupported        = errors.New("this method is not supported by your version of the server")
 )
 
 type DelugeClient interface {
@@ -57,6 +71,10 @@ type DelugeClient interface {
 	SetTorrentOptions(id string, options *Options) error
 	SessionState() ([]string, error)
 	SetLabel(hash, label string) error
+	KnownAccounts() ([]Account, error)
+	CreateAccount(account Account) (bool, error)
+	UpdateAccount(account Account) (bool, error)
+	RemoveAccount(username string) (bool, error)
 }
 
 type NativeDelugeClient interface {

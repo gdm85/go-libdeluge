@@ -320,3 +320,120 @@ func (c *Client) SetLabel(hash, label string) error {
 
 	return nil
 }
+
+// KnownAccounts returns all known accounts, including password and
+// permission levels.
+func (c *Client) KnownAccounts() ([]Account, error) {
+	if !c.settings.V2Daemon {
+		return nil, ErrUnsupported
+	}
+
+	resp, err := c.rpc("core.get_known_accounts", rencode.List{}, rencode.Dictionary{})
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsError() {
+		return nil, resp.RPCError
+	}
+
+	var users rencode.List
+	err = resp.returnValue.Scan(&users)
+	if err != nil {
+		return nil, err
+	}
+
+	// users is now a list of dictionaries, each containing
+	// three []byte attributes: username, password and auth level
+	var accounts []Account
+	for _, u := range users.Values() {
+		dict, ok := u.(rencode.Dictionary)
+		if !ok {
+			return nil, ErrInvalidListResult
+		}
+
+		var a Account
+		err := a.fromDictionary(dict)
+		if err != nil {
+			return nil, err
+		}
+		accounts = append(accounts, a)
+	}
+
+	return accounts, nil
+}
+
+// CreateAccount creates a new Deluge user with the supplied username,
+// password and permission level. The authenticated user must have an
+// authLevel of ADMIN to succeed.
+func (c *Client) CreateAccount(account Account) (bool, error) {
+	if !c.settings.V2Daemon {
+		return false, ErrUnsupported
+	}
+
+	resp, err := c.rpc("core.create_account", account.toList(), rencode.Dictionary{})
+	if err != nil {
+		return false, err
+	}
+	if resp.IsError() {
+		return false, resp.RPCError
+	}
+
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return false, ErrInvalidReturnValue
+	}
+	success := vals[0]
+
+	return success.(bool), nil
+}
+
+// UpdateAccount sets a new password and permission level for a account.
+// The authenticated user must have an authLevel of ADMIN to succeed.
+func (c *Client) UpdateAccount(account Account) (bool, error) {
+	if !c.settings.V2Daemon {
+		return false, ErrUnsupported
+	}
+
+	resp, err := c.rpc("core.update_account", account.toList(), rencode.Dictionary{})
+	if err != nil {
+		return false, err
+	}
+	if resp.IsError() {
+		return false, resp.RPCError
+	}
+
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return false, ErrInvalidReturnValue
+	}
+	success := vals[0]
+
+	return success.(bool), nil
+}
+
+// RemoveAccount will delete an existing username.
+// The authenticated user must have an authLevel of ADMIN to succeed.
+func (c *Client) RemoveAccount(username string) (bool, error) {
+	if !c.settings.V2Daemon {
+		return false, ErrUnsupported
+	}
+
+	var args rencode.List
+	args.Add(username)
+
+	resp, err := c.rpc("core.remove_account", args, rencode.Dictionary{})
+	if err != nil {
+		return false, err
+	}
+	if resp.IsError() {
+		return false, resp.RPCError
+	}
+
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return false, ErrInvalidReturnValue
+	}
+	success := vals[0]
+
+	return success.(bool), nil
+}

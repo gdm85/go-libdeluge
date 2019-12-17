@@ -70,7 +70,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [x] `core.add_torrent_magnet`
 * [x] `core.add_torrent_url`
 * [ ] `core.connect_peer`
-* [ ] `core.create_account`
+* [x] `core.create_account`
 * [ ] `core.create_torrent`
 * [ ] `core.disable_plugin`
 * [ ] `core.enable_plugin`
@@ -86,7 +86,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.get_external_ip`
 * [ ] `core.get_filter_tree`
 * [x] `core.get_free_space`
-* [ ] `core.get_known_accounts`
+* [x] `core.get_known_accounts`
 * [ ] `core.get_libtorrent_version`
 * [ ] `core.get_listen_port`
 * [ ] `core.get_path_size`
@@ -106,7 +106,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.queue_down`
 * [ ] `core.queue_top`
 * [ ] `core.queue_up`
-* [ ] `core.remove_account`
+* [x] `core.remove_account`
 * [x] `core.remove_torrent`
 * [ ] `core.remove_torrents`
 * [ ] `core.rename_files`
@@ -119,7 +119,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [x] `core.set_torrent_options`
 * [x] `core.set_torrent_trackers`
 * [ ] `core.test_listen_port`
-* [ ] `core.update_account`
+* [x] `core.update_account`
 * [ ] `core.upload_plugin`
 
 ### Plugin methods

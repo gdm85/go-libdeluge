@@ -24,7 +24,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gdm85/go-libdeluge"
+	delugeclient "github.com/gdm85/go-libdeluge"
 )
 
 var (
@@ -35,6 +35,7 @@ var (
 
 	addURI       string
 	listTorrents bool
+	listAccounts bool
 	v2daemon     bool
 	free         bool
 
@@ -62,6 +63,8 @@ func init() {
 
 	fs.BoolVar(&free, "f", false, "Display free space")
 	fs.BoolVar(&free, "free", false, "Display free space")
+
+	fs.BoolVar(&listAccounts, "list-accounts", false, "List all known user accounts")
 }
 
 func main() {
@@ -173,10 +176,24 @@ func main() {
 			os.Exit(6)
 		}
 
-		b, err := json.MarshalIndent(torrents, "", "\t")
-		if err != nil {
+		je := json.NewEncoder(os.Stdout)
+		je.SetIndent("", "\t")
+		if err := je.Encode(torrents); err != nil {
 			os.Exit(7)
 		}
-		fmt.Println(string(b))
+	}
+
+	if listAccounts {
+		accounts, err := deluge.KnownAccounts()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: could not list all accounts: %v\n", err)
+			os.Exit(6)
+		}
+
+		je := json.NewEncoder(os.Stdout)
+		je.SetIndent("", "\t")
+		if err := je.Encode(accounts); err != nil {
+			os.Exit(7)
+		}
 	}
 }
