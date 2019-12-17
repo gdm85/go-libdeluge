@@ -1,18 +1,19 @@
-/*
- * go-libdeluge v0.3.1 - a native deluge RPC client library
- * Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-libdeluge/
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-*/
+// go-libdeluge v0.3.1 - a native deluge RPC client library
+// Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-libdeluge/
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+// Package delugeclient allows calling native RPC methods on a remote
+// deluge server.
 package delugeclient
 
 import (
@@ -54,7 +55,7 @@ var (
 	ErrAlreadyClosed      = errors.New("connection is already closed")
 	ErrInvalidListResult  = errors.New("expected dictionary as list response")
 	ErrInvalidReturnValue = errors.New("invalid return value")
-	ErrUnsupportedV1        = errors.New("method not supported by deluge daemon v1")
+	ErrUnsupportedV1      = errors.New("method not supported by deluge daemon v1")
 )
 
 type DelugeClient interface {
