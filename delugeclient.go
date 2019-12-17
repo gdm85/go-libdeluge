@@ -65,6 +65,10 @@ type DelugeClient interface {
 	AddTorrentMagnet(magnetURI string, options *Options) (string, error)
 	AddTorrentURL(url string, options *Options) (string, error)
 	RemoveTorrent(id string, rmFiles bool) (bool, error)
+	PauseTorrents(ids []string) error
+	PauseTorrent(id string) error
+	ResumeTorrents(ids []string) error
+	ResumeTorrent(id string) error
 	TorrentsStatus() (map[string]*TorrentStatus, error)
 	TorrentStatus(id string) (*TorrentStatus, error)
 	MoveStorage(torrentIDs []string, dest string) error
