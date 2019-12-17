@@ -325,7 +325,7 @@ func (c *Client) SetLabel(hash, label string) error {
 // permission levels.
 func (c *Client) KnownAccounts() ([]Account, error) {
 	if !c.settings.V2Daemon {
-		return nil, ErrUnsupported
+		return nil, ErrUnsupportedV1
 	}
 
 	resp, err := c.rpc("core.get_known_accounts", rencode.List{}, rencode.Dictionary{})
@@ -367,7 +367,7 @@ func (c *Client) KnownAccounts() ([]Account, error) {
 // authLevel of ADMIN to succeed.
 func (c *Client) CreateAccount(account Account) (bool, error) {
 	if !c.settings.V2Daemon {
-		return false, ErrUnsupported
+		return false, ErrUnsupportedV1
 	}
 
 	resp, err := c.rpc("core.create_account", account.toList(), rencode.Dictionary{})
@@ -391,7 +391,7 @@ func (c *Client) CreateAccount(account Account) (bool, error) {
 // The authenticated user must have an authLevel of ADMIN to succeed.
 func (c *Client) UpdateAccount(account Account) (bool, error) {
 	if !c.settings.V2Daemon {
-		return false, ErrUnsupported
+		return false, ErrUnsupportedV1
 	}
 
 	resp, err := c.rpc("core.update_account", account.toList(), rencode.Dictionary{})
@@ -415,7 +415,7 @@ func (c *Client) UpdateAccount(account Account) (bool, error) {
 // The authenticated user must have an authLevel of ADMIN to succeed.
 func (c *Client) RemoveAccount(username string) (bool, error) {
 	if !c.settings.V2Daemon {
-		return false, ErrUnsupported
+		return false, ErrUnsupportedV1
 	}
 
 	var args rencode.List

@@ -54,7 +54,7 @@ var (
 	ErrAlreadyClosed      = errors.New("connection is already closed")
 	ErrInvalidListResult  = errors.New("expected dictionary as list response")
 	ErrInvalidReturnValue = errors.New("invalid return value")
-	ErrUnsupported        = errors.New("this method is not supported by your version of the server")
+	ErrUnsupportedV1        = errors.New("method not supported by deluge daemon v1")
 )
 
 type DelugeClient interface {
