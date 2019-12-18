@@ -218,31 +218,30 @@ type TorrentError struct {
 
 // Error satisfies the error interface
 func (t TorrentError) Error() string {
-	return fmt.Sprintf("<%s>: '%s'")
+	return fmt.Sprintf("<%s>: '%s'", t.ID, t.Message)
 }
 
-// RemoveTorrents tries to remove multiple torrents at once. If successful
-// an empty list is returned with a nil error.
-// If errors were encountered, the resulting list will be a list of
+// RemoveTorrents tries to remove multiple torrents at once.
+// If `rmFiles` is set it also tries to delete all downloaded data for the
+// specified torrents.
+// If errors were encountered, the returned list will be a list of
 // TorrentErrors.
-//
-// Will also try to delete all downloaded files for the torrents, If
-// `rmFiles` is set, otherwise they will need to be deleted manually later.
+// On success, an empty list of errors is returned.
 func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, error) {
 	var args rencode.List
 	args.Add(sliceToRencodeList(ids), rmFiles)
 
 	resp, err := c.rpc("core.remove_torrents", args, rencode.Dictionary{})
 	if err != nil {
-		return []TorrentError{}, err
+		return nil, err
 	}
 	if resp.IsError() {
-		return []TorrentError{}, resp.RPCError
+		return nil, resp.RPCError
 	}
 
 	vals := resp.returnValue.Values()
 	if len(vals) == 0 {
-		return []TorrentError{}, ErrInvalidReturnValue
+		return nil, ErrInvalidReturnValue
 	}
 	failedList := vals[0].(rencode.List)
 
@@ -251,8 +250,11 @@ func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, err
 	// Iterate through the list of errors that have occured, and
 	// convert each of them into a more typesafe format.
 	for _, e := range failedList.Values() {
-		// TODO: check cast success
-		failedEntry := e.(rencode.List)
+		failedEntry, ok := e.(rencode.List)
+		if !ok {
+			continue
+		}
+
 		failedTuple := failedEntry.Values()
 		torrentError := TorrentError{
 			ID:      string(failedTuple[0].([]byte)),
@@ -266,9 +268,8 @@ func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, err
 }
 
 // RemoveTorrent removes a single torrent, returning true if successful.
-//
-// Will also try to delete all downloaded files for the torrent, If
-// `rmFiles` is set, otherwise they will need to be deleted manually later.
+// If `rmFiles` is set it also tries to delete all downloaded data for the
+// specified torrent.
 func (c *Client) RemoveTorrent(id string, rmFiles bool) (bool, error) {
 	var args rencode.List
 	args.Add(id, rmFiles)
