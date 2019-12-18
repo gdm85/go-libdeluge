@@ -211,12 +211,10 @@ func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStat
 // methods that manipulate many torrents at once.
 type TorrentError struct {
 	// ID is the hash of the torrent that experienced an error
-	ID string
-	// Message is a string message
+	ID      string
 	Message string
 }
 
-// Error satisfies the error interface
 func (t TorrentError) Error() string {
 	return fmt.Sprintf("<%s>: '%s'", t.ID, t.Message)
 }
