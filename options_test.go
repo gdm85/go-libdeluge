@@ -18,13 +18,15 @@ import (
 	"testing"
 )
 
-var testOpts = Options{
-	MaxConnections:     100,
-	AutoManaged:        true,
-	PreAllocateStorage: true,
-	V2: V2Options{
-		Shared: true,
-	},
+var testOpts Options
+
+func init() {
+	maxConns := 100
+	tVal := true
+	testOpts.MaxConnections = &maxConns
+	testOpts.AutoManaged = &tVal
+	testOpts.PreAllocateStorage = &tVal
+	testOpts.V2.Shared = &tVal
 }
 
 func TestNilOptionsEncode(t *testing.T) {
@@ -33,6 +35,24 @@ func TestNilOptionsEncode(t *testing.T) {
 	d := o.toDictionary(false)
 	if d.Length() != 0 {
 		t.Error("expected an empty dictionary")
+	}
+}
+
+func TestDefaultEncode(t *testing.T) {
+	testOptsWithDefaults := testOpts
+	fVal := false
+	testOptsWithDefaults.StopAtRatio = &fVal
+
+	d := testOptsWithDefaults.toDictionary(false)
+
+	m, err := d.Zip()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("encoded options: %#v\n", m)
+
+	if _, ok := m["stop_at_ratio"]; !ok {
+		t.Errorf("expected key %q not found", "stop_at_ratio")
 	}
 }
 
@@ -45,6 +65,7 @@ func TestOptionsEncodeV1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("encoded options: %#v\n", m)
 
 	if _, ok := m["compact_allocation"]; !ok {
 		t.Errorf("expected key %q not found", "compact_allocation")
@@ -52,6 +73,12 @@ func TestOptionsEncodeV1(t *testing.T) {
 
 	if _, ok := m["shared"]; ok {
 		t.Errorf("unexpected key %q found", "shared")
+
+	}
+
+	// a field never specified should not be encoded
+	if _, ok := m["max_upload_slots"]; ok {
+		t.Errorf("unexpected key %q found", "max_upload_slots")
 
 	}
 }
@@ -65,6 +92,7 @@ func TestOptionsEncodeV2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("encoded options: %#v\n", m)
 
 	if _, ok := m["compact_allocation"]; ok {
 		t.Errorf("unexpected key %q found", "compact_allocation")
@@ -77,6 +105,12 @@ func TestOptionsEncodeV2(t *testing.T) {
 
 	if _, ok := m["shared"]; !ok {
 		t.Errorf("expected key %q not found", "shared")
+
+	}
+
+	// a field never specified should not be encoded
+	if _, ok := m["max_upload_slots"]; ok {
+		t.Errorf("unexpected key %q found", "max_upload_slots")
 
 	}
 }
