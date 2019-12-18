@@ -227,6 +227,11 @@ func (t TorrentError) Error() string {
 // If errors were encountered, the returned list will be a list of
 // TorrentErrors.
 // On success, an empty list of errors is returned.
+//
+// The user should not rely on files being removed or torrents being
+// removed from the session, just because no errors have been returned,
+// as returned errors will primarily indicate that some of the supplied
+// torrent hashes were invalid.
 func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, error) {
 	var args rencode.List
 	args.Add(sliceToRencodeList(ids), rmFiles)
@@ -240,7 +245,7 @@ func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, err
 	}
 
 	vals := resp.returnValue.Values()
-	if len(vals) == 0 {
+	if len(vals) != 1 {
 		return nil, ErrInvalidReturnValue
 	}
 	failedList := vals[0].(rencode.List)
@@ -252,10 +257,17 @@ func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, err
 	for _, e := range failedList.Values() {
 		failedEntry, ok := e.(rencode.List)
 		if !ok {
-			continue
+			// Unexpected response from the API
+			return torrentErrors, ErrInvalidReturnValue
 		}
 
 		failedTuple := failedEntry.Values()
+		if len(failedTuple) != 2 {
+			// return here, as we don't know how to parse the returned
+			// error structure
+			return torrentErrors, ErrInvalidReturnValue
+		}
+
 		torrentError := TorrentError{
 			ID:      string(failedTuple[0].([]byte)),
 			Message: string(failedTuple[1].([]byte)),
@@ -283,7 +295,7 @@ func (c *Client) RemoveTorrent(id string, rmFiles bool) (bool, error) {
 	}
 
 	vals := resp.returnValue.Values()
-	if len(vals) == 0 {
+	if len(vals) != 1 {
 		return false, ErrInvalidReturnValue
 	}
 	success := vals[0]
