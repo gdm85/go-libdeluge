@@ -206,7 +206,7 @@ func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStat
 	return result, nil
 }
 
-// TorrentError is a tuple of a torrent and an error message, returned by
+// TorrentError is a tuple of a torrent id and an error message, returned by
 // methods that manipulate many torrents at once.
 type TorrentError struct {
 	// ID is the hash of the torrent that experienced an error
@@ -221,9 +221,9 @@ func (t TorrentError) Error() string {
 // RemoveTorrents tries to remove multiple torrents at once.
 // If `rmFiles` is set it also tries to delete all downloaded data for the
 // specified torrents.
-// If errors were encountered, the returned list will be a list of
+// If errors were encountered the returned list will be a list of
 // TorrentErrors.
-// On success, an empty list of errors is returned.
+// On success an empty list of errors is returned.
 //
 // The user should not rely on files being removed or torrents being
 // removed from the session, just because no errors have been returned,
@@ -332,7 +332,7 @@ func (c *Client) PauseTorrent(id string) error {
 	return err
 }
 
-// ResumeTorrents unpauses a group of torrents with the given IDs.
+// ResumeTorrents resumes a group of torrents with the given IDs.
 func (c *Client) ResumeTorrents(ids []string) error {
 	var args rencode.List
 	args.Add(sliceToRencodeList(ids))
@@ -348,7 +348,7 @@ func (c *Client) ResumeTorrents(ids []string) error {
 	return err
 }
 
-// ResumeTorrent unpauses a single torrent with the given ID.
+// ResumeTorrent resumes a single torrent with the given ID.
 func (c *Client) ResumeTorrent(id string) error {
 	var args rencode.List
 	args.Add(id)
@@ -364,6 +364,7 @@ func (c *Client) ResumeTorrent(id string) error {
 	return err
 }
 
+// MoveStorage will move the storage location of the group of torrents with the given IDs.
 func (c *Client) MoveStorage(torrentIDs []string, dest string) error {
 	var args rencode.List
 	args.Add(sliceToRencodeList(torrentIDs), dest)
