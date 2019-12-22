@@ -15,6 +15,8 @@
 package delugeclient
 
 import (
+	"fmt"
+
 	"github.com/gdm85/go-rencode"
 )
 
@@ -204,12 +206,83 @@ func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStat
 	return result, nil
 }
 
+// TorrentError is a tuple of a torrent and an error message, returned by
+// methods that manipulate many torrents at once.
+type TorrentError struct {
+	// ID is the hash of the torrent that experienced an error
+	ID      string
+	Message string
+}
+
+func (t TorrentError) Error() string {
+	return fmt.Sprintf("<%s>: '%s'", t.ID, t.Message)
+}
+
+// RemoveTorrents tries to remove multiple torrents at once.
+// If `rmFiles` is set it also tries to delete all downloaded data for the
+// specified torrents.
+// If errors were encountered, the returned list will be a list of
+// TorrentErrors.
+// On success, an empty list of errors is returned.
+//
+// The user should not rely on files being removed or torrents being
+// removed from the session, just because no errors have been returned,
+// as returned errors will primarily indicate that some of the supplied
+// torrent hashes were invalid.
+func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, error) {
+	var args rencode.List
+	args.Add(sliceToRencodeList(ids), rmFiles)
+
+	resp, err := c.rpc("core.remove_torrents", args, rencode.Dictionary{})
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsError() {
+		return nil, resp.RPCError
+	}
+
+	vals := resp.returnValue.Values()
+	if len(vals) != 1 {
+		return nil, ErrInvalidReturnValue
+	}
+	failedList := vals[0].(rencode.List)
+
+	var torrentErrors []TorrentError
+
+	// Iterate through the list of errors that have occured, and
+	// convert each of them into a more typesafe format.
+	for _, e := range failedList.Values() {
+		failedEntry, ok := e.(rencode.List)
+		if !ok {
+			// Unexpected response from the API
+			return torrentErrors, ErrInvalidReturnValue
+		}
+
+		failedTuple := failedEntry.Values()
+		if len(failedTuple) != 2 {
+			// return here, as we don't know how to parse the returned
+			// error structure
+			return torrentErrors, ErrInvalidReturnValue
+		}
+
+		torrentError := TorrentError{
+			ID:      string(failedTuple[0].([]byte)),
+			Message: string(failedTuple[1].([]byte)),
+		}
+
+		torrentErrors = append(torrentErrors, torrentError)
+	}
+
+	return torrentErrors, nil
+}
+
 // RemoveTorrent removes a single torrent, returning true if successful.
+// If `rmFiles` is set it also tries to delete all downloaded data for the
+// specified torrent.
 func (c *Client) RemoveTorrent(id string, rmFiles bool) (bool, error) {
 	var args rencode.List
 	args.Add(id, rmFiles)
 
-	// perform login
 	resp, err := c.rpc("core.remove_torrent", args, rencode.Dictionary{})
 	if err != nil {
 		return false, err
@@ -219,7 +292,7 @@ func (c *Client) RemoveTorrent(id string, rmFiles bool) (bool, error) {
 	}
 
 	vals := resp.returnValue.Values()
-	if len(vals) == 0 {
+	if len(vals) != 1 {
 		return false, ErrInvalidReturnValue
 	}
 	success := vals[0]
