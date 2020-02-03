@@ -124,6 +124,7 @@ var STATUS_KEYS = rencode.NewList(
 	"is_finished",
 	"active_time",
 	"seeding_time",
+	"completed_time",
 	"private")
 
 func (c *Client) TorrentStatus(id string) (*TorrentStatus, error) {

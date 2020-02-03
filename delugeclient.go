@@ -154,6 +154,7 @@ type TorrentStatus struct {
 	TrackerStatus       string
 	TotalSize           int64
 	DownloadLocation    string
+	CompletedTime       int64
 	Private             bool
 
 	Files          []File
