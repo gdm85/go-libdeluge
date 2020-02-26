@@ -168,7 +168,10 @@ func decodeTorrentStatusResponse(resp *DelugeResponse) (*TorrentStatus, error) {
 	}
 
 	var ts TorrentStatus
-	_ = rd.ToStruct(&ts)
+	err := rd.ToStruct(&ts)
+	if err != nil {
+		return nil, err
+	}
 
 	return &ts, nil
 }
