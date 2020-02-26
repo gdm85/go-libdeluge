@@ -115,7 +115,7 @@ type Client struct {
 	safeConn      SafeConn
 	serial        int64
 	classID       int64
-	DebugIncoming [][]byte
+	DebugIncoming []*bytes.Buffer
 }
 
 type SafeConn struct {
@@ -333,24 +333,20 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 		src = &b
 	}
 
+	// copy the source bytes as they are received
+	if c.settings.DebugSaveInteractions {
+		var copyOfSrc bytes.Buffer
+		src = io.TeeReader(src, &copyOfSrc)
+
+		c.DebugIncoming = append(c.DebugIncoming, &copyOfSrc)
+	}
+
 	zr, err := zlib.NewReader(src)
 	if err != nil {
 		return nil, err
 	}
 
-	var d *rencode.Decoder
-	if c.settings.DebugSaveInteractions {
-		var inB bytes.Buffer
-		_, err = io.Copy(&inB, zr)
-		if err != nil {
-			return nil, err
-		}
-		inBytes := inB.Bytes()
-		d = rencode.NewDecoder(bytes.NewReader(inBytes))
-		c.DebugIncoming = append(c.DebugIncoming, inBytes)
-	} else {
-		d = rencode.NewDecoder(zr)
-	}
+	d := rencode.NewDecoder(zr)
 
 	resp, err := c.handleRpcResponse(d, c.serial)
 	if err != nil {
