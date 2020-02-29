@@ -128,6 +128,10 @@ var _ NativeDelugeClient = &Client{}
 
 type rpcResponseTypeID int
 
+// TorrentStatus contains commonly used torrent attributes, as reported
+// by the deluge server.
+// The full list of potentially available attributes can be found here:
+// https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L1033-L1143
 type TorrentStatus struct {
 	NumSeeds            int64
 	Ratio               float32
@@ -154,6 +158,7 @@ type TorrentStatus struct {
 	TrackerStatus       string
 	TotalSize           int64
 	DownloadLocation    string
+	AddedTime           float32 // unix time
 	CompletedTime       int64
 	Private             bool
 
