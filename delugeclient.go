@@ -133,34 +133,34 @@ type rpcResponseTypeID int
 // The full list of potentially available attributes can be found here:
 // https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L1033-L1143
 type TorrentStatus struct {
-	NumSeeds            int64
-	Ratio               float32
-	Progress            float32 // max is 100
-	DistributedCopies   float32
-	TotalDone           int64
-	SeedingTime         int64
-	ETA                 float32 // most times an integer
-	IsFinished          bool
-	NumPieces           int64
-	TrackerHost         string
-	PieceLength         int64
 	ActiveTime          int64
-	IsSeed              bool
-	NumPeers            int64
-	NextAnnounce        int64
-	Name                string
-	Label               string
-	State               string
-	TotalSeeds          int64
-	TotalPeers          int64
-	DownloadPayloadRate int64
-	UploadPayloadRate   int64
-	TrackerStatus       string
-	TotalSize           int64
-	DownloadLocation    string
 	AddedTime           float32 // unix time
 	CompletedTime       int64
+	DistributedCopies   float32
+	DownloadLocation    string
+	DownloadPayloadRate int64
+	ETA                 float32 // most times an integer
+	IsFinished          bool
+	IsSeed              bool
+	Label               string
+	Name                string
+	NextAnnounce        int64
+	NumPeers            int64
+	NumPieces           int64
+	NumSeeds            int64
+	PieceLength         int64
 	Private             bool
+	Progress            float32 // max is 100
+	Ratio               float32
+	SeedingTime         int64
+	State               string
+	TotalDone           int64
+	TotalPeers          int64
+	TotalSeeds          int64
+	TotalSize           int64
+	TrackerHost         string
+	TrackerStatus       string
+	UploadPayloadRate   int64
 
 	Files          []File
 	Peers          []Peer
