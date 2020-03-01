@@ -1,5 +1,5 @@
-// go-libdeluge v0.3.2 - a native deluge RPC client library
-// Copyright (C) 2015~2019 gdm85 - https://github.com/gdm85/go-libdeluge/
+// go-libdeluge v0.4.0 - a native deluge RPC client library
+// Copyright (C) 2015~2020 gdm85 - https://github.com/gdm85/go-libdeluge/
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
