@@ -588,3 +588,26 @@ func (c *Client) GetEnabledPlugins() ([]string, error) {
 
 	return result, nil
 }
+
+// GetAvailablePlugins returns a list of enabled plugins.
+func (c *Client) GetAvailablePlugins() ([]string, error) {
+	resp, err := c.rpc("core.get_available_plugins", rencode.List{}, rencode.Dictionary{})
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsError() {
+		return nil, resp.RPCError
+	}
+
+	var pluginsList rencode.List
+	err = resp.returnValue.Scan(&pluginsList)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]string, pluginsList.Length())
+	for i, m := range pluginsList.Values() {
+		result[i] = string(m.([]byte))
+	}
+
+	return result, nil
+}

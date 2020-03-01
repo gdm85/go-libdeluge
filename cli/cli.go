@@ -36,6 +36,7 @@ var (
 
 	addURI             string
 	listTorrents       bool
+	listAvailablePlugins bool
 	listEnabledPlugins bool
 	listAccounts       bool
 	v2daemon           bool
@@ -64,6 +65,8 @@ func init() {
 	fs.BoolVar(&listTorrents, "list", false, "List all torrents")
 	fs.BoolVar(&listEnabledPlugins, "list-enabled-plugins", false, "List enabled plugins")
 	fs.BoolVar(&listEnabledPlugins, "P", false, "List enabled plugins")
+	fs.BoolVar(&listAvailablePlugins, "list-available-plugins", false, "List available plugins")
+	fs.BoolVar(&listAvailablePlugins, "A", false, "List available plugins")
 
 	fs.BoolVar(&free, "f", false, "Display free space")
 	fs.BoolVar(&free, "free", false, "Display free space")
@@ -159,6 +162,15 @@ func main() {
 			os.Exit(6)
 		}
 		fmt.Printf("free space: %d bytes\n", n)
+	}
+
+	if listAvailablePlugins {
+		plugins, err := deluge.GetAvailablePlugins()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: available plugins list retrieval: %v\n", err)
+			os.Exit(5)
+		}
+		fmt.Println("available plugins:", plugins)
 	}
 
 	if listEnabledPlugins {
