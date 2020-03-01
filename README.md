@@ -10,10 +10,9 @@ Go library for native RPC connection to a [Deluge](http://deluge-torrent.org) da
 
 # How to build
 
-This project uses an automatically-provisioned GOPATH. Example init/building commands on a Linux system:
+This project uses Go modules. You can build it with `make`:
 
 ```
-git submodule update --init --recursive
 make
 ```
 
