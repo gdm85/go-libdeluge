@@ -34,11 +34,12 @@ var (
 	username, password string
 	logLevel           string
 
-	addURI       string
-	listTorrents bool
-	listAccounts bool
-	v2daemon     bool
-	free         bool
+	addURI             string
+	listTorrents       bool
+	listEnabledPlugins bool
+	listAccounts       bool
+	v2daemon           bool
+	free               bool
 
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
 )
@@ -61,6 +62,8 @@ func init() {
 
 	fs.BoolVar(&listTorrents, "e", false, "List all torrents")
 	fs.BoolVar(&listTorrents, "list", false, "List all torrents")
+	fs.BoolVar(&listEnabledPlugins, "list-enabled-plugins", false, "List enabled plugins")
+	fs.BoolVar(&listEnabledPlugins, "P", false, "List enabled plugins")
 
 	fs.BoolVar(&free, "f", false, "Display free space")
 	fs.BoolVar(&free, "free", false, "Display free space")
@@ -155,7 +158,16 @@ func main() {
 			fmt.Fprintf(os.Stderr, "ERROR: could not read free space: %v\n", err)
 			os.Exit(6)
 		}
-		fmt.Printf("Free space: %d bytes\n", n)
+		fmt.Printf("free space: %d bytes\n", n)
+	}
+
+	if listEnabledPlugins {
+		plugins, err := deluge.GetEnabledPlugins()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: enabled plugins list retrieval: %v\n", err)
+			os.Exit(5)
+		}
+		fmt.Println("enabled plugins:", plugins)
 	}
 
 	if listTorrents {

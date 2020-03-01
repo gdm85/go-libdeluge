@@ -81,7 +81,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.get_config`
 * [ ] `core.get_config_value`
 * [ ] `core.get_config_values`
-* [ ] `core.get_enabled_plugins`
+* [x] `core.get_enabled_plugins`
 * [ ] `core.get_external_ip`
 * [ ] `core.get_filter_tree`
 * [x] `core.get_free_space`

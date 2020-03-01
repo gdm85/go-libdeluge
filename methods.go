@@ -565,3 +565,26 @@ func (c *Client) RemoveAccount(username string) (bool, error) {
 
 	return success.(bool), nil
 }
+
+// GetEnabledPlugins returns a list of enabled plugins.
+func (c *Client) GetEnabledPlugins() ([]string, error) {
+	resp, err := c.rpc("core.get_enabled_plugins", rencode.List{}, rencode.Dictionary{})
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsError() {
+		return nil, resp.RPCError
+	}
+
+	var pluginsList rencode.List
+	err = resp.returnValue.Scan(&pluginsList)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]string, pluginsList.Length())
+	for i, m := range pluginsList.Values() {
+		result[i] = string(m.([]byte))
+	}
+
+	return result, nil
+}
