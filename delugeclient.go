@@ -131,6 +131,7 @@ type rpcResponseTypeID int
 // by the deluge server.
 // The full list of potentially available attributes can be found here:
 // https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L1033-L1143
+// If a new field is added to this struct it should also be added to the statusKeys map.
 type TorrentStatus struct {
 	ActiveTime          int64
 	AddedTime           float32 // unix time
