@@ -75,7 +75,6 @@ type DelugeClient interface {
 	SetTorrentTracker(id, tracker string) error
 	SetTorrentOptions(id string, options *Options) error
 	SessionState() ([]string, error)
-	SetLabel(hash, label string) error
 	KnownAccounts() ([]Account, error)
 	CreateAccount(account Account) (bool, error)
 	UpdateAccount(account Account) (bool, error)
@@ -142,7 +141,6 @@ type TorrentStatus struct {
 	ETA                 float32 // most times an integer
 	IsFinished          bool
 	IsSeed              bool
-	Label               string
 	Name                string
 	NextAnnounce        int64
 	NumPeers            int64
