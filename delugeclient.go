@@ -129,45 +129,6 @@ var _ NativeDelugeClient = &Client{}
 
 type rpcResponseTypeID int
 
-// TorrentStatus contains commonly used torrent attributes, as reported
-// by the deluge server.
-// The full list of potentially available attributes can be found here:
-// https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L1033-L1143
-// If a new field is added to this struct it should also be added to the statusKeys map.
-type TorrentStatus struct {
-	ActiveTime          int64
-	CompletedTime       int64
-	DistributedCopies   float32
-	DownloadLocation    string
-	DownloadPayloadRate int64
-	ETA                 float32 // most times an integer
-	IsFinished          bool
-	IsSeed              bool
-	Name                string
-	NextAnnounce        int64
-	NumPeers            int64
-	NumPieces           int64
-	NumSeeds            int64
-	PieceLength         int64
-	Private             bool
-	Progress            float32 // max is 100
-	Ratio               float32
-	SeedingTime         int64
-	State               string
-	TotalDone           int64
-	TotalPeers          int64
-	TotalSeeds          int64
-	TotalSize           int64
-	TrackerHost         string
-	TrackerStatus       string
-	UploadPayloadRate   int64
-
-	Files          []File
-	Peers          []Peer
-	FilePriorities []int64
-	FileProgress   []float32
-}
-
 type File struct {
 	Index  int64
 	Size   int64
@@ -558,13 +519,4 @@ func (c *Client) DaemonVersion() (string, error) {
 	}
 
 	return info, nil
-}
-
-func sliceToRencodeList(s []string) rencode.List {
-	var list rencode.List
-	for _, v := range s {
-		list.Add(v)
-	}
-
-	return list
 }

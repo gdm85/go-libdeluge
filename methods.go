@@ -20,41 +20,6 @@ import (
 	"github.com/gdm85/go-rencode"
 )
 
-// each of the available fields in a torrent status
-// fields differ from v1/v2
-// See current list at https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L1033-L1143
-var statusKeys = rencode.NewList(
-	"state",
-	"download_location",
-	"tracker_host",
-	"tracker_status",
-	"next_announce",
-	"name",
-	"total_size",
-	"progress",
-	"num_seeds",
-	"total_seeds",
-	"num_peers",
-	"total_peers",
-	"eta",
-	"download_payload_rate",
-	"upload_payload_rate",
-	"ratio",
-	"distributed_copies",
-	"num_pieces",
-	"piece_length",
-	"total_done",
-	"files",
-	"file_priorities",
-	"file_progress",
-	"peers",
-	"is_seed",
-	"is_finished",
-	"active_time",
-	"seeding_time",
-	"completed_time",
-	"private")
-
 // GetFreeSpace returns the available free space; path is optional.
 func (c *Client) GetFreeSpace(path string) (int64, error) {
 	var args rencode.List
@@ -127,90 +92,6 @@ func (c *Client) AddTorrentURL(url string, options *Options) (string, error) {
 		return "", nil
 	}
 	return string(torrentHash.([]uint8)), nil
-}
-
-func (c *Client) TorrentStatus(id string) (*TorrentStatus, error) {
-	var args rencode.List
-	args.Add(id)
-	args.Add(statusKeys)
-
-	resp, err := c.rpc("core.get_torrent_status", args, rencode.Dictionary{})
-	if err != nil {
-		return nil, err
-	}
-	if resp.IsError() {
-		return nil, resp.RPCError
-	}
-
-	return decodeTorrentStatusResponse(resp)
-}
-
-func (c *Client) TorrentsStatus() (map[string]*TorrentStatus, error) {
-	var args rencode.List
-	args.Add(rencode.Dictionary{})
-	args.Add(statusKeys)
-
-	resp, err := c.rpc("core.get_torrents_status", args, rencode.Dictionary{})
-	if err != nil {
-		return nil, err
-	}
-	if resp.IsError() {
-		return nil, resp.RPCError
-	}
-
-	return decodeTorrentsStatusResponse(resp)
-}
-
-func decodeTorrentStatusResponse(resp *DelugeResponse) (*TorrentStatus, error) {
-	values := resp.returnValue.Values()
-	if len(values) != 1 {
-		return nil, ErrInvalidReturnValue
-	}
-	rd, ok := values[0].(rencode.Dictionary)
-	if !ok {
-		return nil, ErrInvalidListResult
-	}
-
-	var ts TorrentStatus
-	err := rd.ToStruct(&ts)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ts, nil
-}
-
-func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStatus, error) {
-	values := resp.returnValue.Values()
-	if len(values) != 1 {
-		return nil, ErrInvalidReturnValue
-	}
-	rd, ok := values[0].(rencode.Dictionary)
-	if !ok {
-		return nil, ErrInvalidListResult
-	}
-
-	d, err := rd.Zip()
-	if err != nil {
-		return nil, err
-	}
-
-	result := map[string]*TorrentStatus{}
-	for k, rv := range d {
-		v, ok := rv.(rencode.Dictionary)
-		if !ok {
-			return nil, ErrInvalidListResult
-		}
-
-		var ts TorrentStatus
-		err = v.ToStruct(&ts)
-		if err != nil {
-			return nil, err
-		}
-		result[k] = &ts
-	}
-
-	return result, nil
 }
 
 // TorrentError is a tuple of a torrent id and an error message, returned by
@@ -556,4 +437,13 @@ func (c *Client) GetEnabledPlugins() ([]string, error) {
 // GetAvailablePlugins returns a list of available plugins.
 func (c *Client) GetAvailablePlugins() ([]string, error) {
 	return c.rpcWithListResult("core.get_available_plugins")
+}
+
+func sliceToRencodeList(s []string) rencode.List {
+	var list rencode.List
+	for _, v := range s {
+		list.Add(v)
+	}
+
+	return list
 }
