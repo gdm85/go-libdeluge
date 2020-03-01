@@ -134,7 +134,6 @@ type rpcResponseTypeID int
 // If a new field is added to this struct it should also be added to the statusKeys map.
 type TorrentStatus struct {
 	ActiveTime          int64
-	AddedTime           float32 // unix time
 	CompletedTime       int64
 	DistributedCopies   float32
 	DownloadLocation    string
