@@ -267,56 +267,68 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 		c.serial = 1
 	}
 
-	// rencode -> zlib -> openssl -> TCP
-	var b bytes.Buffer
-	z := zlib.NewWriter(&b)
-	e := rencode.NewEncoder(z)
+	// {Python objects} -> rencode -> ZLib -> openSSL -> TCP
+	// the rencode and ZLib steps are covered here
+	var reqBytes bytes.Buffer
+	zReq := zlib.NewWriter(&reqBytes)
+	eReq := rencode.NewEncoder(zReq)
 
 	// payload is wrapped twice in a list because there is support for multiple RPC calls
-	// although not used currently
+	// (although not currently used)
 	payload := rencode.NewList(rencode.NewList(c.serial, methodName, args, kwargs))
 
-	err := e.Encode(payload)
+	err := eReq.Encode(payload)
 	if err != nil {
 		return nil, err
 	}
 
 	// flush zlib-compressed buffer
-	err = z.Close()
+	err = zReq.Close()
 	if err != nil {
 		return nil, err
 	}
 	if c.settings.Logger != nil {
 		c.settings.Logger.Println("flushed zlib buffer")
 	}
+	l := reqBytes.Len()
 
 	// write to connection without closing it
 	if c.settings.V2Daemon {
 		// on v2+ send the header
 		var header [5]byte
 		header[0] = PROTOCOL_VERSION
-		binary.BigEndian.PutUint32(header[1:], uint32(b.Len()))
+		binary.BigEndian.PutUint32(header[1:], uint32(l))
 		_, err = c.safeConn.Write(header[:])
 		if err != nil {
 			return nil, err
 		}
 		if c.settings.Logger != nil {
-			c.settings.Logger.Printf("written V2 header %X to RPC connection", header[:])
+			c.settings.Logger.Printf("V2 request header: %X", header[:])
 		}
 	}
-	n, err := c.safeConn.Write(b.Bytes())
+	n, err := io.Copy(&c.safeConn, &reqBytes)
 	if err != nil {
 		return nil, err
 	}
 	if c.settings.Logger != nil {
 		c.settings.Logger.Printf("written %d bytes to RPC connection", n)
 	}
+	if int(n) != l {
+		return nil, fmt.Errorf("expected to write %d raw request bytes but written %d bytes instead", l, n)
+	}
 
-	// setup a reader: TCP -> openssl -> zlib -> (header in V2) rencode -> {objects}
-	var src io.Reader
-	if !c.settings.V2Daemon {
-		src = &c.safeConn
-	} else {
+	// setup a reader pipeline for the response: TCP -> openssl -> ZLib -> (header in V2) rencode -> {Python objects}
+	var src io.Reader = &c.safeConn
+
+	// when debugging copy the source bytes as they are received
+	if c.settings.DebugSaveInteractions {
+		var copyOfResponseBytes bytes.Buffer
+		src = io.TeeReader(src, &copyOfResponseBytes)
+
+		c.DebugIncoming = append(c.DebugIncoming, &copyOfResponseBytes)
+	}
+
+	if c.settings.V2Daemon {
 		// on v2+ first identify the header, then use the compressed body (more inefficient)
 		// a zlib header could be automatically detected but it's pointless since we use a flag to identify V2 daemons
 		// (remote endpoint does not version handshakes)
@@ -325,27 +337,28 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 		if err != nil {
 			return nil, err
 		}
+		if c.settings.Logger != nil {
+			c.settings.Logger.Printf("V2 response header: %X", header[:])
+		}
 
 		if header[0] != PROTOCOL_VERSION {
 			return nil, fmt.Errorf("found protocol version %d but expected %d", header[0], PROTOCOL_VERSION)
 		}
 
+		// read all the advertised bytes at once
 		l := binary.BigEndian.Uint32(header[1:])
-		b.Reset()
-		_, err = io.CopyN(&b, &c.safeConn, int64(l))
+		var respBytes bytes.Buffer
+
+		n, err := io.CopyN(&respBytes, src, int64(l))
 		if err != nil {
 			return nil, err
 		}
 
-		src = &b
-	}
+		if n != int64(l) {
+			return nil, fmt.Errorf("expected %d bytes read but got %d", l, n)
+		}
 
-	// copy the source bytes as they are received
-	if c.settings.DebugSaveInteractions {
-		var copyOfSrc bytes.Buffer
-		src = io.TeeReader(src, &copyOfSrc)
-
-		c.DebugIncoming = append(c.DebugIncoming, &copyOfSrc)
+		src = &respBytes
 	}
 
 	zr, err := zlib.NewReader(src)
