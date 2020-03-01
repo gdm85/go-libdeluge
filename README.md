@@ -121,7 +121,3 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.test_listen_port`
 * [x] `core.update_account`
 * [ ] `core.upload_plugin`
-
-### Plugin methods
-
-* [x] `label.set_torrent`
