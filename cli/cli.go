@@ -183,7 +183,7 @@ func main() {
 	}
 
 	if listTorrents {
-		torrents, err := deluge.TorrentsStatus()
+		torrents, err := deluge.TorrentsStatus(delugeclient.StateUnspecified, nil)
 
 		// store response for testing/development
 		count := len(deluge.DebugIncoming)

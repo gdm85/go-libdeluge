@@ -57,7 +57,22 @@ type TorrentStatus struct {
 	FileProgress   []float32
 }
 
+type TorrentState string
 
+// See all defined torrent states here: https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/common.py#L70-L78
+// Plus the special 'Active' state.
+const (
+	StateUnspecified TorrentState = ""
+	StateActive      TorrentState = "Active"
+	StateAllocating  TorrentState = "Allocating"
+	StateChecking    TorrentState = "Checking"
+	StateDownloading TorrentState = "Downloading"
+	StateSeeding     TorrentState = "Seeding"
+	StatePaused      TorrentState = "Paused"
+	StateError       TorrentState = "Error"
+	StateQueued      TorrentState = "Queued"
+	StateMoving      TorrentState = "Moving"
+)
 
 // each of the available fields in a torrent status
 // fields differ from v1/v2
@@ -94,10 +109,10 @@ var statusKeys = rencode.NewList(
 	"completed_time",
 	"private")
 
-
-func (c *Client) TorrentStatus(id string) (*TorrentStatus, error) {
+// TorrentStatus returns the status of the torrent with specified hash.
+func (c *Client) TorrentStatus(hash string) (*TorrentStatus, error) {
 	var args rencode.List
-	args.Add(id)
+	args.Add(hash)
 	args.Add(statusKeys)
 
 	resp, err := c.rpc("core.get_torrent_status", args, rencode.Dictionary{})
@@ -111,9 +126,18 @@ func (c *Client) TorrentStatus(id string) (*TorrentStatus, error) {
 	return decodeTorrentStatusResponse(resp)
 }
 
-func (c *Client) TorrentsStatus() (map[string]*TorrentStatus, error) {
+// TorrentsStatus returns the status of torrents matching the specified state and list of hashes.
+// Both state and list of hashes are optional.
+func (c *Client) TorrentsStatus(state TorrentState, hashes []string) (map[string]*TorrentStatus, error) {
 	var args rencode.List
-	args.Add(rencode.Dictionary{})
+	var filterDict rencode.Dictionary
+	if len(hashes) != 0 {
+		filterDict.Add("id", sliceToRencodeList(hashes))
+	}
+	if state != StateUnspecified {
+		filterDict.Add("state", string(state))
+	}
+	args.Add(filterDict)
 	args.Add(statusKeys)
 
 	resp, err := c.rpc("core.get_torrents_status", args, rencode.Dictionary{})

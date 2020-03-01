@@ -69,7 +69,7 @@ type DelugeClient interface {
 	PauseTorrent(id string) error
 	ResumeTorrents(ids []string) error
 	ResumeTorrent(id string) error
-	TorrentsStatus() (map[string]*TorrentStatus, error)
+	TorrentsStatus(state TorrentState, ids []string) (map[string]*TorrentStatus, error)
 	TorrentStatus(id string) (*TorrentStatus, error)
 	MoveStorage(torrentIDs []string, dest string) error
 	SetTorrentTracker(id, tracker string) error
@@ -106,7 +106,9 @@ type Settings struct {
 	Logger           *log.Logger
 	ReadWriteTimeout time.Duration // Timeout for read/write operations on the TCP stream.
 	// V2Daemon enables the new v1 protocol for v2 daemons.
-	V2Daemon              bool
+	V2Daemon bool
+	// DebugSaveInteractions is used populate the DebugIncoming slice on the client with
+	// byte buffers containing the raw bytes as received from the Deluge server.
 	DebugSaveInteractions bool
 }
 
