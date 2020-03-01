@@ -388,25 +388,7 @@ func (c *Client) MoveStorage(torrentIDs []string, dest string) error {
 }
 
 func (c *Client) SessionState() ([]string, error) {
-	resp, err := c.rpc("core.get_session_state", rencode.List{}, rencode.Dictionary{})
-	if err != nil {
-		return nil, err
-	}
-	if resp.IsError() {
-		return nil, resp.RPCError
-	}
-
-	var idList rencode.List
-	err = resp.returnValue.Scan(&idList)
-	if err != nil {
-		return []string{}, err
-	}
-	result := make([]string, idList.Length())
-	for i, m := range idList.Values() {
-		result[i] = string(m.([]byte))
-	}
-
-	return result, nil
+	return c.rpcWithListResult("core.get_session_state")
 }
 
 // SetTorrentOptions updates options for the torrent with the given hash.
@@ -568,46 +550,10 @@ func (c *Client) RemoveAccount(username string) (bool, error) {
 
 // GetEnabledPlugins returns a list of enabled plugins.
 func (c *Client) GetEnabledPlugins() ([]string, error) {
-	resp, err := c.rpc("core.get_enabled_plugins", rencode.List{}, rencode.Dictionary{})
-	if err != nil {
-		return nil, err
-	}
-	if resp.IsError() {
-		return nil, resp.RPCError
-	}
-
-	var pluginsList rencode.List
-	err = resp.returnValue.Scan(&pluginsList)
-	if err != nil {
-		return nil, err
-	}
-	result := make([]string, pluginsList.Length())
-	for i, m := range pluginsList.Values() {
-		result[i] = string(m.([]byte))
-	}
-
-	return result, nil
+	return c.rpcWithListResult("core.get_enabled_plugins")
 }
 
-// GetAvailablePlugins returns a list of enabled plugins.
+// GetAvailablePlugins returns a list of available plugins.
 func (c *Client) GetAvailablePlugins() ([]string, error) {
-	resp, err := c.rpc("core.get_available_plugins", rencode.List{}, rencode.Dictionary{})
-	if err != nil {
-		return nil, err
-	}
-	if resp.IsError() {
-		return nil, resp.RPCError
-	}
-
-	var pluginsList rencode.List
-	err = resp.returnValue.Scan(&pluginsList)
-	if err != nil {
-		return nil, err
-	}
-	result := make([]string, pluginsList.Length())
-	for i, m := range pluginsList.Values() {
-		result[i] = string(m.([]byte))
-	}
-
-	return result, nil
+	return c.rpcWithListResult("core.get_available_plugins")
 }

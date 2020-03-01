@@ -516,22 +516,26 @@ func (c *Client) Connect() error {
 
 // MethodsList returns a list of available methods on server.
 func (c *Client) MethodsList() ([]string, error) {
-	resp, err := c.rpc("daemon.get_method_list", rencode.List{}, rencode.Dictionary{})
+	return c.rpcWithListResult("daemon.get_method_list")
+}
+
+func (c *Client) rpcWithListResult(method string) ([]string, error) {
+	resp, err := c.rpc(method, rencode.List{}, rencode.Dictionary{})
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 	if resp.IsError() {
-		return []string{}, resp.RPCError
+		return nil, resp.RPCError
 	}
 
-	var methodsList rencode.List
-	err = resp.returnValue.Scan(&methodsList)
+	var list rencode.List
+	err = resp.returnValue.Scan(&list)
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
-	result := make([]string, methodsList.Length())
-	for i, m := range methodsList.Values() {
-		result[i] = string(m.([]byte))
+	result := make([]string, list.Length())
+	for i, v := range list.Values() {
+		result[i] = string(v.([]byte))
 	}
 
 	return result, nil

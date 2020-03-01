@@ -34,13 +34,13 @@ var (
 	username, password string
 	logLevel           string
 
-	addURI             string
-	listTorrents       bool
+	addURI               string
+	listTorrents         bool
 	listAvailablePlugins bool
-	listEnabledPlugins bool
-	listAccounts       bool
-	v2daemon           bool
-	free               bool
+	listEnabledPlugins   bool
+	listAccounts         bool
+	v2daemon             bool
+	free                 bool
 
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
 )
