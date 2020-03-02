@@ -44,15 +44,7 @@ func (c *Client) GetTorrentLabel(hash string) (string, error) {
 	args.Add(hash)
 	args.Add(rencode.NewList("label"))
 
-	resp, err := c.rpc("core.get_torrent_status", args, rencode.Dictionary{})
-	if err != nil {
-		return "", err
-	}
-	if resp.IsError() {
-		return "", resp.RPCError
-	}
-
-	rd, err := decodeListWithOneDictionary(resp)
+	rd, err := c.rpcWithDictionaryResult("core.get_torrent_status", args, rencode.Dictionary{})
 	if err != nil {
 		return "", err
 	}
@@ -81,15 +73,7 @@ func (c *Client) GetTorrentsLabels(state TorrentState, ids []string) (map[string
 	args.Add(filterDict)
 	args.Add(rencode.NewList("label"))
 
-	resp, err := c.rpc("core.get_torrents_status", args, rencode.Dictionary{})
-	if err != nil {
-		return nil, err
-	}
-	if resp.IsError() {
-		return nil, resp.RPCError
-	}
-
-	rd, err := decodeListWithOneDictionary(resp)
+	rd, err := c.rpcWithDictionaryResult("core.get_torrents_status", args, rencode.Dictionary{})
 	if err != nil {
 		return nil, err
 	}

@@ -481,10 +481,10 @@ func (c *Client) Connect() error {
 
 // MethodsList returns a list of available methods on server.
 func (c *Client) MethodsList() ([]string, error) {
-	return c.rpcWithListResult("daemon.get_method_list")
+	return c.rpcWithStringsResult("daemon.get_method_list")
 }
 
-func (c *Client) rpcWithListResult(method string) ([]string, error) {
+func (c *Client) rpcWithStringsResult(method string) ([]string, error) {
 	resp, err := c.rpc(method, rencode.List{}, rencode.Dictionary{})
 	if err != nil {
 		return nil, err
@@ -504,6 +504,31 @@ func (c *Client) rpcWithListResult(method string) ([]string, error) {
 	}
 
 	return result, nil
+}
+
+func (c *Client) rpcWithDictionaryResult(methodName string, args rencode.List, kwargs rencode.Dictionary) (rencode.Dictionary, error) {
+	var (
+		rd rencode.Dictionary
+		ok bool
+	)
+	resp, err := c.rpc(methodName, args, kwargs)
+	if err != nil {
+		return rd, err
+	}
+	if resp.IsError() {
+		return rd, resp.RPCError
+	}
+
+	values := resp.returnValue.Values()
+	if len(values) != 1 {
+		return rd, ErrInvalidReturnValue
+	}
+	rd, ok = values[0].(rencode.Dictionary)
+	if !ok {
+		return rd, ErrInvalidDictionaryResponse
+	}
+
+	return rd, nil
 }
 
 // DaemonVersion returns the running daemon version.

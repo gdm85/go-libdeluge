@@ -115,15 +115,18 @@ func (c *Client) TorrentStatus(hash string) (*TorrentStatus, error) {
 	args.Add(hash)
 	args.Add(statusKeys)
 
-	resp, err := c.rpc("core.get_torrent_status", args, rencode.Dictionary{})
+	rd, err := c.rpcWithDictionaryResult("core.get_torrent_status", args, rencode.Dictionary{})
 	if err != nil {
 		return nil, err
 	}
-	if resp.IsError() {
-		return nil, resp.RPCError
+
+	var ts TorrentStatus
+	err = rd.ToStruct(&ts)
+	if err != nil {
+		return nil, err
 	}
 
-	return decodeTorrentStatusResponse(resp)
+	return &ts, nil
 }
 
 // TorrentsStatus returns the status of torrents matching the specified state and list of hashes.
@@ -140,47 +143,7 @@ func (c *Client) TorrentsStatus(state TorrentState, hashes []string) (map[string
 	args.Add(filterDict)
 	args.Add(statusKeys)
 
-	resp, err := c.rpc("core.get_torrents_status", args, rencode.Dictionary{})
-	if err != nil {
-		return nil, err
-	}
-	if resp.IsError() {
-		return nil, resp.RPCError
-	}
-
-	return decodeTorrentsStatusResponse(resp)
-}
-
-func decodeListWithOneDictionary(resp *DelugeResponse) (rencode.Dictionary, error) {
-	values := resp.returnValue.Values()
-	if len(values) != 1 {
-		return rencode.Dictionary{}, ErrInvalidReturnValue
-	}
-	rd, ok := values[0].(rencode.Dictionary)
-	if !ok {
-		return rencode.Dictionary{}, ErrInvalidDictionaryResponse
-	}
-
-	return rd, nil
-}
-
-func decodeTorrentStatusResponse(resp *DelugeResponse) (*TorrentStatus, error) {
-	rd, err := decodeListWithOneDictionary(resp)
-	if err != nil {
-		return nil, err
-	}
-
-	var ts TorrentStatus
-	err = rd.ToStruct(&ts)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ts, nil
-}
-
-func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStatus, error) {
-	rd, err := decodeListWithOneDictionary(resp)
+	rd, err := c.rpcWithDictionaryResult("core.get_torrents_status", args, rencode.Dictionary{})
 	if err != nil {
 		return nil, err
 	}

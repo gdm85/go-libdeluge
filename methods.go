@@ -269,7 +269,7 @@ func (c *Client) MoveStorage(torrentIDs []string, dest string) error {
 }
 
 func (c *Client) SessionState() ([]string, error) {
-	return c.rpcWithListResult("core.get_session_state")
+	return c.rpcWithStringsResult("core.get_session_state")
 }
 
 // SetTorrentOptions updates options for the torrent with the given hash.
@@ -431,7 +431,7 @@ func (c *Client) RemoveAccount(username string) (bool, error) {
 
 // GetEnabledPlugins returns a list of enabled plugins.
 func (c *Client) GetEnabledPlugins() ([]string, error) {
-	return c.rpcWithListResult("core.get_enabled_plugins")
+	return c.rpcWithStringsResult("core.get_enabled_plugins")
 }
 
 // GetEnabledPluginsLookup returns a lookup map of the enabled plugins.
@@ -445,7 +445,7 @@ func (c *Client) GetAvailablePluginsLookup() (map[string]struct{}, error) {
 }
 
 func (c *Client) getPluginsListLookup(method string) (map[string]struct{}, error) {
-	plugins, err := c.rpcWithListResult(method)
+	plugins, err := c.rpcWithStringsResult(method)
 	if err != nil {
 		return nil, err
 	}
@@ -458,7 +458,7 @@ func (c *Client) getPluginsListLookup(method string) (map[string]struct{}, error
 
 // GetAvailablePlugins returns a list of available plugins.
 func (c *Client) GetAvailablePlugins() ([]string, error) {
-	return c.rpcWithListResult("core.get_available_plugins")
+	return c.rpcWithStringsResult("core.get_available_plugins")
 }
 
 func sliceToRencodeList(s []string) rencode.List {
