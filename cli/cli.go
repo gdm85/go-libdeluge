@@ -39,6 +39,8 @@ var (
 	listAvailablePlugins bool
 	listEnabledPlugins   bool
 	listAccounts         bool
+	torrentHash          string
+	setLabel             string
 	v2daemon             bool
 	free                 bool
 
@@ -67,6 +69,11 @@ func init() {
 	fs.BoolVar(&listEnabledPlugins, "P", false, "List enabled plugins")
 	fs.BoolVar(&listAvailablePlugins, "list-available-plugins", false, "List available plugins")
 	fs.BoolVar(&listAvailablePlugins, "A", false, "List available plugins")
+
+	fs.StringVar(&torrentHash, "torrent", "", "Operate on specified torrent hash")
+	fs.StringVar(&torrentHash, "t", "", "Operate on specified torrent hash")
+	fs.StringVar(&setLabel, "set-label", "", "Set label on torrent")
+	fs.StringVar(&setLabel, "b", "", "Set label on torrent")
 
 	fs.BoolVar(&free, "f", false, "Display free space")
 	fs.BoolVar(&free, "free", false, "Display free space")
@@ -180,6 +187,19 @@ func main() {
 			os.Exit(5)
 		}
 		fmt.Println("enabled plugins:", plugins)
+	}
+
+	if setLabel != "" {
+		if torrentHash == "" {
+			fmt.Fprintf(os.Stderr, "ERROR: no torrent hash specified\n")
+			os.Exit(5)
+		}
+		p := delugeclient.LabelPlugin{deluge}
+		err := p.SetTorrentLabel(torrentHash, setLabel)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: setting label %q on torrent %q: %v\n", setLabel, torrentHash, err)
+			os.Exit(5)
+		}
 	}
 
 	if listTorrents {
