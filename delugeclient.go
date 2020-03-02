@@ -435,11 +435,6 @@ func (c *Client) Connect() error {
 		return err
 	}
 
-	err = enableKeepAlive(rawConn, 10*time.Second, 2, 5*time.Second)
-	if err != nil {
-		return err
-	}
-
 	c.safeConn.conn = tls.Client(rawConn, &tls.Config{
 		ServerName:         c.settings.Hostname,
 		InsecureSkipVerify: true, // x509: cannot verify signature: algorithm unimplemented
