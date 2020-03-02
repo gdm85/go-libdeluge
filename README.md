@@ -55,7 +55,7 @@ This will start downloading the latest Ubuntu 14.04 LTS server ISO. Multiple mag
 
 Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 daemon you must set `V2Daemon` to true in `delugeclient.Settings`.
 
-## RPC API supported methods
+# RPC API supported methods
 
 * [x] `daemon.login`
 * [x] `daemon.info`
@@ -76,7 +76,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.force_reannounce`
 * [ ] `core.force_recheck`
 * [ ] `core.get_auth_levels_mappings`
-* [ ] `core.get_available_plugins`
+* [x] `core.get_available_plugins`
 * [ ] `core.get_completion_paths`
 * [ ] `core.get_config`
 * [ ] `core.get_config_value`
@@ -120,3 +120,36 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.test_listen_port`
 * [x] `core.update_account`
 * [ ] `core.upload_plugin`
+
+# Plugins
+
+In order to use plugins' functionality you must first check if a plugin is enabled with `GetEnabledPlugins()` or `GetEnabledPluginsLookup()`.
+
+Example:
+
+```go
+	pluginsLookup, err := deluge.GetEnabledPluginsLookup()
+	if err != nil {
+		panic(err)
+	}
+	if _, ok := plugins["Label"]; !ok {
+		panic("Label plugin not availble")
+	}
+
+	p := delugeclient.LabelPlugin{deluge}
+	// call plugin methods
+	labelsByTorrent, err := p.GetTorrentsLabels(delugeclient.StateUnspecified, nil)
+```
+
+## Label
+
+### RPC API supported methods
+
+* [ ] `label.add`
+* [ ] `label.get_config`
+* [ ] `label.get_labels`
+* [ ] `label.get_options` `
+* [ ] `label.remove`
+* [ ] `label.set_config`
+* [ ] `label.set_options`
+* [x] `label.set_torrent`
