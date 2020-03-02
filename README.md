@@ -148,7 +148,7 @@ Example:
 * [ ] `label.add`
 * [ ] `label.get_config`
 * [ ] `label.get_labels`
-* [ ] `label.get_options` `
+* [ ] `label.get_options`
 * [ ] `label.remove`
 * [ ] `label.set_config`
 * [ ] `label.set_options`
