@@ -51,10 +51,10 @@ const (
 
 var (
 	// ErrAlreadyClosed is returned when connection is already closed.
-	ErrAlreadyClosed      = errors.New("connection is already closed")
-	ErrInvalidListResult  = errors.New("expected dictionary as list response")
-	ErrInvalidReturnValue = errors.New("invalid return value")
-	ErrUnsupportedV1      = errors.New("method not supported by deluge daemon v1")
+	ErrAlreadyClosed             = errors.New("connection is already closed")
+	ErrInvalidDictionaryResponse = errors.New("expected dictionary as list response")
+	ErrInvalidReturnValue        = errors.New("invalid return value")
+	ErrUnsupportedV1             = errors.New("method not supported by deluge daemon v1")
 )
 
 type DelugeClient interface {

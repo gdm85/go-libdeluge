@@ -52,13 +52,9 @@ func (c *Client) GetTorrentLabel(hash string) (string, error) {
 		return "", resp.RPCError
 	}
 
-	values := resp.returnValue.Values()
-	if len(values) != 1 {
-		return "", ErrInvalidReturnValue
-	}
-	rd, ok := values[0].(rencode.Dictionary)
-	if !ok {
-		return "", ErrInvalidListResult
+	rd, err := decodeListWithOneDictionary(resp)
+	if err != nil {
+		return "", err
 	}
 
 	var s struct {
@@ -93,13 +89,9 @@ func (c *Client) GetTorrentsLabels(state TorrentState, ids []string) (map[string
 		return nil, resp.RPCError
 	}
 
-	values := resp.returnValue.Values()
-	if len(values) != 1 {
-		return nil, ErrInvalidReturnValue
-	}
-	rd, ok := values[0].(rencode.Dictionary)
-	if !ok {
-		return nil, ErrInvalidListResult
+	rd, err := decodeListWithOneDictionary(resp)
+	if err != nil {
+		return nil, err
 	}
 
 	d, err := rd.Zip()
@@ -111,7 +103,7 @@ func (c *Client) GetTorrentsLabels(state TorrentState, ids []string) (map[string
 	for k, rv := range d {
 		v, ok := rv.(rencode.Dictionary)
 		if !ok {
-			return nil, ErrInvalidListResult
+			return nil, ErrInvalidDictionaryResponse
 		}
 
 		var s struct {

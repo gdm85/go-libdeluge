@@ -339,7 +339,7 @@ func (c *Client) KnownAccounts() ([]Account, error) {
 	for _, u := range users.Values() {
 		dict, ok := u.(rencode.Dictionary)
 		if !ok {
-			return nil, ErrInvalidListResult
+			return nil, ErrInvalidDictionaryResponse
 		}
 
 		var a Account

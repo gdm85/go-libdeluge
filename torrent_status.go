@@ -151,18 +151,27 @@ func (c *Client) TorrentsStatus(state TorrentState, hashes []string) (map[string
 	return decodeTorrentsStatusResponse(resp)
 }
 
-func decodeTorrentStatusResponse(resp *DelugeResponse) (*TorrentStatus, error) {
+func decodeListWithOneDictionary(resp *DelugeResponse) (rencode.Dictionary, error) {
 	values := resp.returnValue.Values()
 	if len(values) != 1 {
-		return nil, ErrInvalidReturnValue
+		return rencode.Dictionary{}, ErrInvalidReturnValue
 	}
 	rd, ok := values[0].(rencode.Dictionary)
 	if !ok {
-		return nil, ErrInvalidListResult
+		return rencode.Dictionary{}, ErrInvalidDictionaryResponse
+	}
+
+	return rd, nil
+}
+
+func decodeTorrentStatusResponse(resp *DelugeResponse) (*TorrentStatus, error) {
+	rd, err := decodeListWithOneDictionary(resp)
+	if err != nil {
+		return nil, err
 	}
 
 	var ts TorrentStatus
-	err := rd.ToStruct(&ts)
+	err = rd.ToStruct(&ts)
 	if err != nil {
 		return nil, err
 	}
@@ -171,13 +180,9 @@ func decodeTorrentStatusResponse(resp *DelugeResponse) (*TorrentStatus, error) {
 }
 
 func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStatus, error) {
-	values := resp.returnValue.Values()
-	if len(values) != 1 {
-		return nil, ErrInvalidReturnValue
-	}
-	rd, ok := values[0].(rencode.Dictionary)
-	if !ok {
-		return nil, ErrInvalidListResult
+	rd, err := decodeListWithOneDictionary(resp)
+	if err != nil {
+		return nil, err
 	}
 
 	d, err := rd.Zip()
@@ -189,7 +194,7 @@ func decodeTorrentsStatusResponse(resp *DelugeResponse) (map[string]*TorrentStat
 	for k, rv := range d {
 		v, ok := rv.(rencode.Dictionary)
 		if !ok {
-			return nil, ErrInvalidListResult
+			return nil, ErrInvalidDictionaryResponse
 		}
 
 		var ts TorrentStatus
