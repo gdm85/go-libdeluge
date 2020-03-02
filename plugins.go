@@ -37,3 +37,92 @@ func (p LabelPlugin) SetTorrentLabel(hash, label string) error {
 
 	return nil
 }
+
+// GetTorrentLabel returns the label of the specified torrent.
+func (c *Client) GetTorrentLabel(hash string) (string, error) {
+	var args rencode.List
+	args.Add(hash)
+	args.Add(rencode.NewList("label"))
+
+	resp, err := c.rpc("core.get_torrent_status", args, rencode.Dictionary{})
+	if err != nil {
+		return "", err
+	}
+	if resp.IsError() {
+		return "", resp.RPCError
+	}
+
+	values := resp.returnValue.Values()
+	if len(values) != 1 {
+		return "", ErrInvalidReturnValue
+	}
+	rd, ok := values[0].(rencode.Dictionary)
+	if !ok {
+		return "", ErrInvalidListResult
+	}
+
+	var s struct {
+		Label string
+	}
+	err = rd.ToStruct(&s)
+	if err != nil {
+		return "", err
+	}
+
+	return s.Label, nil
+}
+
+// GetTorrentsLabels filters torrents by state and/or IDs and returns their label.
+func (c *Client) GetTorrentsLabels(state TorrentState, ids []string) (map[string]string, error) {
+	var args rencode.List
+	var filterDict rencode.Dictionary
+	if len(ids) != 0 {
+		filterDict.Add("id", sliceToRencodeList(ids))
+	}
+	if state != StateUnspecified {
+		filterDict.Add("state", string(state))
+	}
+	args.Add(filterDict)
+	args.Add(rencode.NewList("label"))
+
+	resp, err := c.rpc("core.get_torrents_status", args, rencode.Dictionary{})
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsError() {
+		return nil, resp.RPCError
+	}
+
+	values := resp.returnValue.Values()
+	if len(values) != 1 {
+		return nil, ErrInvalidReturnValue
+	}
+	rd, ok := values[0].(rencode.Dictionary)
+	if !ok {
+		return nil, ErrInvalidListResult
+	}
+
+	d, err := rd.Zip()
+	if err != nil {
+		return nil, err
+	}
+
+	result := map[string]string{}
+	for k, rv := range d {
+		v, ok := rv.(rencode.Dictionary)
+		if !ok {
+			return nil, ErrInvalidListResult
+		}
+
+		var s struct {
+			Label string
+		}
+		err = v.ToStruct(&s)
+		if err != nil {
+			return nil, err
+		}
+		result[k] = s.Label
+	}
+
+	return result, nil
+}
