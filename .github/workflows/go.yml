@@ -16,8 +16,11 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
 
-    - name: Build
+    - name: Linux build
       run: make
+
+    - name: Windows build
+      run: make build-windows
 
     - name: Cache
       uses: actions/cache@v1.0.3
