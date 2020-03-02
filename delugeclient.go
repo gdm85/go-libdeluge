@@ -81,6 +81,8 @@ type DelugeClient interface {
 	RemoveAccount(username string) (bool, error)
 	GetAvailablePlugins() ([]string, error)
 	GetEnabledPlugins() ([]string, error)
+	GetAvailablePluginsLookup() (map[string]struct{}, error)
+	GetEnabledPluginsLookup() (map[string]struct{}, error)
 }
 
 type NativeDelugeClient interface {
