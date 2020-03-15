@@ -117,13 +117,13 @@ type Settings struct {
 // Client is a Deluge RPC client.
 type Client struct {
 	settings      Settings
-	safeConn      SafeConn
+	safeConn      safeConn
 	serial        int64
 	classID       int64
 	DebugIncoming []*bytes.Buffer
 }
 
-type SafeConn struct {
+type safeConn struct {
 	conn             *tls.Conn
 	readWriteTimeout time.Duration
 }
@@ -133,6 +133,7 @@ var _ NativeDelugeClient = &Client{}
 
 type rpcResponseTypeID int
 
+// File is a Deluge torrent file.
 type File struct {
 	Index  int64
 	Size   int64
@@ -140,6 +141,7 @@ type File struct {
 	Path   string
 }
 
+// Peer is a Deluge torrent peer.
 type Peer struct {
 	Client    string
 	IP        string
@@ -199,7 +201,7 @@ func (dr *DelugeResponse) String() string {
 	return fmt.Sprintf("invalid message type: %d", dr.messageType)
 }
 
-func (sc *SafeConn) Read(p []byte) (n int, err error) {
+func (sc *safeConn) Read(p []byte) (n int, err error) {
 	// set deadline
 	err = sc.conn.SetReadDeadline(time.Now().Add(sc.readWriteTimeout))
 	if err != nil {
@@ -209,7 +211,7 @@ func (sc *SafeConn) Read(p []byte) (n int, err error) {
 	return sc.conn.Read(p)
 }
 
-func (sc *SafeConn) Write(p []byte) (n int, err error) {
+func (sc *safeConn) Write(p []byte) (n int, err error) {
 	// set deadline
 	err = sc.conn.SetWriteDeadline(time.Now().Add(sc.readWriteTimeout))
 	if err != nil {
@@ -219,8 +221,8 @@ func (sc *SafeConn) Write(p []byte) (n int, err error) {
 	return sc.conn.Write(p)
 }
 
-// protocol version used with Deluge v2+
-const PROTOCOL_VERSION = 1
+// Deluge2ProtocolVersion is the protocol version used with Deluge v2+
+const Deluge2ProtocolVersion = 1
 
 func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictionary) (*DelugeResponse, error) {
 	if c.safeConn.conn == nil {
@@ -261,7 +263,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	if c.settings.V2Daemon {
 		// on v2+ send the header
 		var header [5]byte
-		header[0] = PROTOCOL_VERSION
+		header[0] = Deluge2ProtocolVersion
 		binary.BigEndian.PutUint32(header[1:], uint32(l))
 		_, err = c.safeConn.Write(header[:])
 		if err != nil {
@@ -306,8 +308,8 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 			c.settings.Logger.Printf("V2 response header: %X", header[:])
 		}
 
-		if header[0] != PROTOCOL_VERSION {
-			return nil, fmt.Errorf("found protocol version %d but expected %d", header[0], PROTOCOL_VERSION)
+		if header[0] != Deluge2ProtocolVersion {
+			return nil, fmt.Errorf("found protocol version %d but expected %d", header[0], Deluge2ProtocolVersion)
 		}
 
 		// read all the advertised bytes at once
@@ -339,7 +341,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	}
 	d := rencode.NewDecoder(&deflatedBuf)
 
-	resp, err := c.handleRpcResponse(d, c.serial)
+	resp, err := c.handleRPCResponse(d, c.serial)
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +351,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	return resp, nil
 }
 
-func (c *Client) handleRpcResponse(d *rencode.Decoder, expectedSerial int64) (*DelugeResponse, error) {
+func (c *Client) handleRPCResponse(d *rencode.Decoder, expectedSerial int64) (*DelugeResponse, error) {
 	var respList rencode.List
 	err := d.Scan(&respList)
 	if err != nil {
