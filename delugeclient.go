@@ -333,13 +333,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 		return nil, err
 	}
 
-	// buffered input here is necessary to avoid the rencode decoder racing past the ZLib decoder
-	var deflatedBuf bytes.Buffer
-	_, err = io.Copy(&deflatedBuf, zr)
-	if err != nil {
-		return nil, err
-	}
-	d := rencode.NewDecoder(&deflatedBuf)
+	d := rencode.NewDecoder(zr)
 
 	resp, err := c.handleRPCResponse(d, c.serial)
 	if err != nil {
