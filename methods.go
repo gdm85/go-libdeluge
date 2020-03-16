@@ -429,6 +429,22 @@ func (c *Client) RemoveAccount(username string) (bool, error) {
 	return success.(bool), nil
 }
 
+// ForceReannounce will reannounce torrent status to associated tracker(s).
+func (c *Client) ForceReannounce(ids []string) error {
+	var args rencode.List
+	args.Add(sliceToRencodeList(ids))
+
+	resp, err := c.rpc("core.force_reannounce", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return err
+}
+
 // GetEnabledPlugins returns a list of enabled plugins.
 func (c *Client) GetEnabledPlugins() ([]string, error) {
 	return c.rpcWithStringsResult("core.get_enabled_plugins")
