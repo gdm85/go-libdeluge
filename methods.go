@@ -442,7 +442,7 @@ func (c *Client) ForceReannounce(ids []string) error {
 		return resp.RPCError
 	}
 
-	return err
+	return nil
 }
 
 // GetEnabledPlugins returns a list of enabled plugins.
