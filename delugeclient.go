@@ -79,6 +79,7 @@ type DelugeClient interface {
 	CreateAccount(account Account) (bool, error)
 	UpdateAccount(account Account) (bool, error)
 	RemoveAccount(username string) (bool, error)
+	ForceReannounce(ids []string) error
 	GetAvailablePlugins() ([]string, error)
 	GetEnabledPlugins() ([]string, error)
 	GetAvailablePluginsLookup() (map[string]struct{}, error)

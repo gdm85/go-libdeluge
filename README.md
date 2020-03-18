@@ -73,7 +73,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.create_torrent`
 * [ ] `core.disable_plugin`
 * [ ] `core.enable_plugin`
-* [ ] `core.force_reannounce`
+* [x] `core.force_reannounce`
 * [ ] `core.force_recheck`
 * [ ] `core.get_auth_levels_mappings`
 * [x] `core.get_available_plugins`
