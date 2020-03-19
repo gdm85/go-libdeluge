@@ -1,6 +1,6 @@
 bin/
 .gopath/
-vendor/github.com/gdm85/go-libdeluge
+vendor/
 
 # misc
 /.idea/
