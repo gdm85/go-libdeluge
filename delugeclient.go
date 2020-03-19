@@ -61,6 +61,7 @@ type DelugeClient interface {
 	MethodsList() ([]string, error)
 	DaemonVersion() (string, error)
 	GetFreeSpace(string) (int64, error)
+	GetLibtorrentVersion() (string, error)
 	AddTorrentMagnet(magnetURI string, options *Options) (string, error)
 	AddTorrentURL(url string, options *Options) (string, error)
 	RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, error)
