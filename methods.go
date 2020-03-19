@@ -42,6 +42,25 @@ func (c *Client) GetFreeSpace(path string) (int64, error) {
 	return freeSpace, nil
 }
 
+// GetLibtorrentVersion returns the libtorrent version.
+func (c *Client) GetLibtorrentVersion() (string, error) {
+	resp, err := c.rpc("core.get_libtorrent_version", rencode.List{}, rencode.Dictionary{})
+	if err != nil {
+		return "", err
+	}
+	if resp.IsError() {
+		return "", resp.RPCError
+	}
+
+	var ltVersion string
+	err = resp.returnValue.Scan(&ltVersion)
+	if err != nil {
+		return "", err
+	}
+
+	return ltVersion, nil
+}
+
 // AddTorrentMagnet adds a torrent via magnet URI and returns the torrent hash.
 func (c *Client) AddTorrentMagnet(magnetURI string, options *Options) (string, error) {
 	var args rencode.List
