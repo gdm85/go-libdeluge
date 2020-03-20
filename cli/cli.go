@@ -43,6 +43,7 @@ var (
 	setLabel             string
 	listLabels           bool
 	v2daemon             bool
+	integrationTests     bool
 	free                 bool
 
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
@@ -63,6 +64,8 @@ func init() {
 	fs.StringVar(&addURI, "add", "", "Add a torrent via magnet URI")
 
 	fs.BoolVar(&v2daemon, "v2", false, "Use protocol compatible with a v2 daemon")
+	fs.BoolVar(&integrationTests, "i", false, "Run integration tests")
+	fs.BoolVar(&integrationTests, "integration-tests", false, "Run integration tests")
 
 	fs.BoolVar(&listTorrents, "e", false, "List all torrents")
 	fs.BoolVar(&listTorrents, "list", false, "List all torrents")
@@ -113,7 +116,7 @@ func main() {
 		logger = log.New(os.Stderr, "DELUGE: ", log.Lshortfile)
 		debugIncoming = true
 	default:
-		fmt.Fprintf(os.Stderr, "ERROR: invalid log level specified\n")
+		fmt.Fprintf(os.Stderr, "ERROR: invalid log level %q specified\n", logLevel)
 		os.Exit(2)
 	}
 
@@ -131,6 +134,17 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: connection failed: %v\n", err)
 		os.Exit(3)
+	}
+	defer deluge.Close()
+
+	if integrationTests {
+		err := runAllIntegrationTests(deluge)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+			os.Exit(4)
+		}
+		fmt.Fprintf(os.Stdout, "Integration tests succeeded\n")
+		return
 	}
 
 	// print daemon version
@@ -197,7 +211,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "ERROR: no torrent hash specified\n")
 			os.Exit(5)
 		}
-		p := delugeclient.LabelPlugin{deluge}
+		p := delugeclient.LabelPlugin{Client: deluge}
 		err := p.SetTorrentLabel(torrentHash, setLabel)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: setting label %q on torrent %q: %v\n", setLabel, torrentHash, err)
@@ -206,7 +220,7 @@ func main() {
 	}
 
 	if listLabels {
-		p := delugeclient.LabelPlugin{deluge}
+		p := delugeclient.LabelPlugin{Client: deluge}
 		labelsByTorrent, err := p.GetTorrentsLabels(delugeclient.StateUnspecified, nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: enabled plugins list retrieval: %v\n", err)

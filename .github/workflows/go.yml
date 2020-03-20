@@ -1,4 +1,4 @@
-name: Go
+name: Go build and Deluge integration
 on: [push, pull_request]
 jobs:
 
@@ -13,11 +13,20 @@ jobs:
         go-version: 1.13
       id: go
 
-    - name: Check out code into the Go module directory
+    - name: Check out repository
       uses: actions/checkout@v1
 
     - name: Linux build
-      run: make
+      run: |
+        make
+        cp scripts/deluge-install.sh bin/
+        cp scripts/deluge-integration.sh bin/
+
+    - name: Upload Linux build
+      uses: actions/upload-artifact@v1
+      with:
+        name: linux-amd64
+        path: bin/
 
     - name: Windows build
       run: make build-windows
@@ -29,3 +38,43 @@ jobs:
         path: ~/go/pkg/mod
         # An explicit key for restoring and saving the cache
         key: ${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+
+  integration_v2:
+    name: Deluge v2.0.3 integration test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Download Linux build
+      uses: actions/download-artifact@v1
+      with:
+        name: linux-amd64
+        path: bin/
+
+    - name: Install Deluge v2.0.3
+      run: |
+        sudo bash bin/deluge-install.sh --v2
+
+    - name: Integration test
+      run: |
+        bash bin/deluge-integration.sh --v2
+
+  integration_v1:
+    name: Deluge v1.3 integration test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Download Linux build
+      uses: actions/download-artifact@v1
+      with:
+        name: linux-amd64
+        path: bin/
+
+    - name: Install Deluge v1.3
+      run: |
+        sudo bash bin/deluge-install.sh --v1
+
+    - name: Integration test
+      run: |
+        bash bin/deluge-integration.sh --v1
