@@ -86,7 +86,7 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 * [ ] `core.get_filter_tree`
 * [x] `core.get_free_space`
 * [x] `core.get_known_accounts`
-* [ ] `core.get_libtorrent_version`
+* [x] `core.get_libtorrent_version`
 * [ ] `core.get_listen_port`
 * [ ] `core.get_path_size`
 * [ ] `core.get_proxy`
