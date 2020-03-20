@@ -1,7 +1,1 @@
 bin/
-.gopath/
-vendor/
-
-# misc
-/.idea/
-/.vscode/
