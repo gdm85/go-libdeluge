@@ -123,20 +123,17 @@ Both deluge v2.0+ and v1.3+ are supported with the two different constructors `N
 
 # Plugins
 
-In order to use plugins' functionality you must first check if a plugin is enabled with `GetEnabledPlugins()` or `GetEnabledPluginsLookup()`.
-
-Example:
+Plugins can be used by calling the relative method and checking if the result is not nil, example:
 
 ```go
-	pluginsLookup, err := deluge.GetEnabledPluginsLookup()
+	p, err := deluge.LabelPlugin()
 	if err != nil {
 		panic(err)
 	}
-	if _, ok := plugins["Label"]; !ok {
+	if p == nil {
 		panic("Label plugin not availble")
 	}
 
-	p := delugeclient.LabelPlugin{deluge}
 	// call plugin methods
 	labelsByTorrent, err := p.GetTorrentsLabels(delugeclient.StateUnspecified, nil)
 ```

@@ -453,28 +453,6 @@ func (c *Client) GetEnabledPlugins() ([]string, error) {
 	return c.rpcWithStringsResult("core.get_enabled_plugins")
 }
 
-// GetEnabledPluginsLookup returns a lookup map of the enabled plugins.
-func (c *Client) GetEnabledPluginsLookup() (map[string]struct{}, error) {
-	return c.getPluginsListLookup("core.get_enabled_plugins")
-}
-
-// GetAvailablePluginsLookup returns a lookup map of the available plugins.
-func (c *Client) GetAvailablePluginsLookup() (map[string]struct{}, error) {
-	return c.getPluginsListLookup("core.get_available_plugins")
-}
-
-func (c *Client) getPluginsListLookup(method string) (map[string]struct{}, error) {
-	plugins, err := c.rpcWithStringsResult(method)
-	if err != nil {
-		return nil, err
-	}
-	lookup := map[string]struct{}{}
-	for _, p := range plugins {
-		lookup[p] = struct{}{}
-	}
-	return lookup, nil
-}
-
 // GetAvailablePlugins returns a list of available plugins.
 func (c *Client) GetAvailablePlugins() ([]string, error) {
 	return c.rpcWithStringsResult("core.get_available_plugins")

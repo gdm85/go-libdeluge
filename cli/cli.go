@@ -212,8 +212,12 @@ func main() {
 			fmt.Fprintf(os.Stderr, "ERROR: no torrent hash specified\n")
 			os.Exit(5)
 		}
-		p := delugeclient.LabelPlugin{Client: &deluge.Client}
-		err := p.SetTorrentLabel(torrentHash, setLabel)
+		p, err := deluge.LabelPlugin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: enabled plugins list retrieval: %v\n", err)
+			os.Exit(5)
+		}
+		err = p.SetTorrentLabel(torrentHash, setLabel)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: setting label %q on torrent %q: %v\n", setLabel, torrentHash, err)
 			os.Exit(5)
@@ -221,7 +225,11 @@ func main() {
 	}
 
 	if listLabels {
-		p := delugeclient.LabelPlugin{Client: &deluge.Client}
+		p, err := deluge.LabelPlugin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: enabled plugins list retrieval: %v\n", err)
+			os.Exit(5)
+		}
 		labelsByTorrent, err := p.GetTorrentsLabels(delugeclient.StateUnspecified, nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: enabled plugins list retrieval: %v\n", err)

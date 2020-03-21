@@ -84,8 +84,6 @@ type DelugeClient interface {
 	ForceReannounce(ids []string) error
 	GetAvailablePlugins() ([]string, error)
 	GetEnabledPlugins() ([]string, error)
-	GetAvailablePluginsLookup() (map[string]struct{}, error)
-	GetEnabledPluginsLookup() (map[string]struct{}, error)
 }
 
 // DelugeClientV2 is an interface for v2 Deluge servers.
