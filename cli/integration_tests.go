@@ -35,16 +35,19 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 		os.Exit(3)
 	}
 	defer deluge.Close()
+	printServerResponse(c)
 
 	_, err = deluge.DaemonVersion()
 	if err != nil {
 		return err
 	}
+	printServerResponse(c)
 
 	methods, err := deluge.MethodsList()
 	if err != nil {
 		return err
 	}
+	printServerResponse(c)
 	if len(methods) == 0 {
 		return errors.New("no methods returned")
 	}
@@ -53,16 +56,19 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 	if err != nil {
 		return err
 	}
+	printServerResponse(c)
 
 	_, err = deluge.GetAvailablePlugins()
 	if err != nil {
 		return err
 	}
+	printServerResponse(c)
 
 	_, err = deluge.GetEnabledPlugins()
 	if err != nil {
 		return err
 	}
+	printServerResponse(c)
 
 	if v2daemon {
 		deluge := deluge.(delugeclient.DelugeClientV2)
@@ -70,12 +76,14 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 		if err != nil {
 			return err
 		}
+		printServerResponse(c)
 	}
 
 	torrentHash, err := deluge.AddTorrentMagnet(testMagnetURI, nil)
 	if err != nil {
 		return err
 	}
+	printServerResponse(c)
 	if torrentHash == "" {
 		return errors.New("torrent was not added")
 	}
@@ -88,6 +96,7 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 		if err != nil {
 			return err
 		}
+		printServerResponse(c)
 
 		for id := range torrents {
 			if id == testMagnetHash {
@@ -119,5 +128,4 @@ func printServerResponse(c *delugeclient.Client) {
 	fmt.Printf("payload: %X\n", buf.Bytes())
 
 	c.DebugServerResponses = nil
-
 }
