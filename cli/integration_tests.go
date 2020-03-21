@@ -34,19 +34,19 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 		os.Exit(3)
 	}
 	defer deluge.Close()
-	printServerResponse(c)
+	printServerResponse("DaemonLogin", c)
 
 	_, err = deluge.DaemonVersion()
 	if err != nil {
 		return err
 	}
-	printServerResponse(c)
+	printServerResponse("DaemonVersion", c)
 
 	methods, err := deluge.MethodsList()
 	if err != nil {
 		return err
 	}
-	printServerResponse(c)
+	printServerResponse("MethodsList", c)
 	if len(methods) == 0 {
 		return errors.New("no methods returned")
 	}
@@ -55,19 +55,19 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 	if err != nil {
 		return err
 	}
-	printServerResponse(c)
+	printServerResponse("GetFreeSpace", c)
 
 	_, err = deluge.GetAvailablePlugins()
 	if err != nil {
 		return err
 	}
-	printServerResponse(c)
+	printServerResponse("GetAvailablePlugins", c)
 
 	_, err = deluge.GetEnabledPlugins()
 	if err != nil {
 		return err
 	}
-	printServerResponse(c)
+	printServerResponse("GetEnabledPlugins", c)
 
 	if v2daemon {
 		deluge := deluge.(delugeclient.DelugeClientV2)
@@ -75,14 +75,14 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 		if err != nil {
 			return err
 		}
-		printServerResponse(c)
+		printServerResponse("KnownAccounts", c)
 	}
 
 	torrentHash, err := deluge.AddTorrentMagnet(testMagnetURI, nil)
 	if err != nil {
 		return err
 	}
-	printServerResponse(c)
+	printServerResponse("AddTorrentMagnet", c)
 	if torrentHash == "" {
 		return errors.New("torrent was not added")
 	}
@@ -91,7 +91,7 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 	if err != nil {
 		return err
 	}
-	printServerResponse(c)
+	printServerResponse("TorrentsStatus", c)
 
 	found := false
 	for id := range torrents {
@@ -107,14 +107,14 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 	return nil
 }
 
-func printServerResponse(c *delugeclient.Client) {
+func printServerResponse(methodName string, c *delugeclient.Client) {
 	if len(c.DebugServerResponses) != 1 {
 		panic("BUG: expected exactly one response")
 	}
 
 	// store response for testing/development
 	buf := c.DebugServerResponses[0]
-	fmt.Printf("received %d compressed bytes: %X", buf.Len(), buf.Bytes())
+	fmt.Printf("%s: received %d compressed bytes: %X\n", methodName, buf.Len(), buf.Bytes())
 
 	c.DebugServerResponses = nil
 }
