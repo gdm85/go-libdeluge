@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	delugeclient "github.com/gdm85/go-libdeluge"
 )
@@ -88,29 +87,21 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 		return errors.New("torrent was not added")
 	}
 
-	const maxAttempts = 1
-	found := false
-	attempts := 0
-	for !found {
-		torrents, err := deluge.TorrentsStatus(delugeclient.StateUnspecified, nil)
-		if err != nil {
-			return err
-		}
-		printServerResponse(c)
+	torrents, err := deluge.TorrentsStatus(delugeclient.StateUnspecified, nil)
+	if err != nil {
+		return err
+	}
+	printServerResponse(c)
 
-		for id := range torrents {
-			if id == testMagnetHash {
-				found = true
-				break
-			}
+	found := false
+	for id := range torrents {
+		if id == testMagnetHash {
+			found = true
+			break
 		}
-		if !found {
-			attempts++
-			if attempts == maxAttempts {
-				return errors.New("cannot find torrent")
-			}
-			time.Sleep(time.Millisecond * 100)
-		}
+	}
+	if !found {
+		return errors.New("cannot find torrent")
 	}
 
 	return nil
@@ -123,9 +114,7 @@ func printServerResponse(c *delugeclient.Client) {
 
 	// store response for testing/development
 	buf := c.DebugServerResponses[0]
-	fmt.Println("last call received contained", buf.Len(), "compressed bytes")
-
-	fmt.Printf("payload: %X\n", buf.Bytes())
+	fmt.Printf("received %d compressed bytes: %X", buf.Len(), buf.Bytes())
 
 	c.DebugServerResponses = nil
 }

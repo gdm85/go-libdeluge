@@ -63,6 +63,7 @@ type DelugeClient interface {
 	Connect() error
 	Close() error
 
+	DaemonLogin() error
 	MethodsList() ([]string, error)
 	DaemonVersion() (string, error)
 	GetFreeSpace(string) (int64, error)
@@ -99,7 +100,7 @@ type DelugeClientV2 interface {
 // Client is a Deluge RPC client.
 type Client struct {
 	settings     Settings
-	safeConn     safeConn
+	safeConn     io.ReadWriteCloser
 	serial       int64
 	classID      int64
 	v2daemon     bool
@@ -143,6 +144,16 @@ type Settings struct {
 type safeConn struct {
 	conn             *tls.Conn
 	readWriteTimeout time.Duration
+}
+
+func newSafeConn(rawConn net.Conn, hostname string, readWriteTimeout time.Duration) *safeConn {
+	var sc safeConn
+	sc.conn = tls.Client(rawConn, &tls.Config{
+		ServerName:         hostname,
+		InsecureSkipVerify: true, // x509: cannot verify signature: algorithm unimplemented
+	})
+	sc.readWriteTimeout = readWriteTimeout
+	return &sc
 }
 
 type rpcResponseTypeID int
@@ -235,6 +246,15 @@ func (sc *safeConn) Write(p []byte) (n int, err error) {
 	return sc.conn.Write(p)
 }
 
+func (sc *safeConn) Close() error {
+	if sc.conn == nil {
+		return ErrAlreadyClosed
+	}
+	err := sc.conn.Close()
+	sc.conn = nil
+	return err
+}
+
 // NewV1 returns a Deluge client for v1.3 servers.
 func NewV1(s Settings) *Client {
 	if s.ReadWriteTimeout == time.Duration(0) {
@@ -261,21 +281,13 @@ func NewV2(s Settings) *ClientV2 {
 
 // Close closes the connection of a Deluge client.
 func (c *Client) Close() error {
-	if c.safeConn.conn == nil {
-		return ErrAlreadyClosed
-	}
-	err := c.safeConn.conn.Close()
-	c.safeConn.conn = nil
-	return err
+	return c.safeConn.Close()
 }
 
 // Deluge2ProtocolVersion is the protocol version used with Deluge v2+
 const Deluge2ProtocolVersion = 1
 
 func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictionary) (*DelugeResponse, error) {
-	if c.safeConn.conn == nil {
-		return nil, ErrAlreadyClosed
-	}
 	// generate serial
 	c.serial++
 	if c.serial == math.MaxInt64 {
@@ -321,7 +333,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 			c.settings.Logger.Printf("V2 request header: %X", header[:])
 		}
 	}
-	n, err := io.Copy(&c.safeConn, &reqBytes)
+	n, err := io.Copy(c.safeConn, &reqBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +345,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	}
 
 	// setup a reader pipeline for the response: TCP -> openssl -> ZLib -> (header in V2) rencode -> {Python objects}
-	var src io.Reader = &c.safeConn
+	var src io.Reader = c.safeConn
 
 	// when debugging copy the source bytes as they are received
 	if c.settings.DebugServerResponses {
@@ -451,7 +463,7 @@ func (c *Client) handleRPCResponse(d *rencode.Decoder, expectedSerial int64) (*D
 	return &resp, nil
 }
 
-// Connect performs connection to a Deluge daemon second previously specified settings.
+// Connect performs connection to a Deluge daemon and logs in.
 func (c *Client) Connect() error {
 	dialer := new(net.Dialer)
 	rawConn, err := dialer.Dial("tcp", fmt.Sprintf("%s:%d", c.settings.Hostname, c.settings.Port))
@@ -459,16 +471,26 @@ func (c *Client) Connect() error {
 		return err
 	}
 
-	c.safeConn.conn = tls.Client(rawConn, &tls.Config{
-		ServerName:         c.settings.Hostname,
-		InsecureSkipVerify: true, // x509: cannot verify signature: algorithm unimplemented
-	})
-	c.safeConn.readWriteTimeout = c.settings.ReadWriteTimeout
+	c.safeConn = newSafeConn(rawConn, c.settings.Hostname, c.settings.ReadWriteTimeout)
 
 	if c.settings.Logger != nil {
 		c.settings.Logger.Printf("connected to %s:%d\n", c.settings.Hostname, c.settings.Port)
 	}
 
+	err = c.DaemonLogin()
+	if err != nil {
+		return err
+	}
+
+	if c.settings.Logger != nil {
+		c.settings.Logger.Println("login successful as user", c.settings.Login)
+	}
+
+	return nil
+}
+
+// DaemonLogin performs login to the Deluge daemon.
+func (c *Client) DaemonLogin() error {
 	var kwargs rencode.Dictionary
 
 	// in v2+ the client version must be specified
@@ -486,16 +508,7 @@ func (c *Client) Connect() error {
 	}
 
 	// get class of logged-in user
-	err = resp.returnValue.Scan(&c.classID)
-	if err != nil {
-		return err
-	}
-
-	if c.settings.Logger != nil {
-		c.settings.Logger.Println("login successful as user", c.settings.Login)
-	}
-
-	return nil
+	return resp.returnValue.Scan(&c.classID)
 }
 
 // MethodsList returns a list of available methods on server.
