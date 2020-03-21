@@ -34,7 +34,7 @@ The library by itself is a Go package and needs to be embedded in an UI or CLI a
 	// ... use the 'deluge' client methods
 ```
 
-To debug the library you may want to set `DebugSaveInteractions` to true.
+To debug the library you may want to set `DebugServerResponses` to true.
 
 ## Example CLI application
 
@@ -53,7 +53,7 @@ This will start downloading the latest Ubuntu 14.04 LTS server ISO. Multiple mag
 
 # Supported deluge versions
 
-Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 daemon you must set `V2Daemon` to true in `delugeclient.Settings`.
+Both deluge v2.0+ and v1.3+ are supported with the two different constructors `NewV2` and `NewV1`.
 
 # RPC API supported methods
 
@@ -123,20 +123,17 @@ Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 
 
 # Plugins
 
-In order to use plugins' functionality you must first check if a plugin is enabled with `GetEnabledPlugins()` or `GetEnabledPluginsLookup()`.
-
-Example:
+Plugins can be used by calling the relative method and checking if the result is not nil, example:
 
 ```go
-	pluginsLookup, err := deluge.GetEnabledPluginsLookup()
+	p, err := deluge.LabelPlugin()
 	if err != nil {
 		panic(err)
 	}
-	if _, ok := plugins["Label"]; !ok {
+	if p == nil {
 		panic("Label plugin not availble")
 	}
 
-	p := delugeclient.LabelPlugin{deluge}
 	// call plugin methods
 	labelsByTorrent, err := p.GetTorrentsLabels(delugeclient.StateUnspecified, nil)
 ```

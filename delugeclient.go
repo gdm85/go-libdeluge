@@ -1,4 +1,4 @@
-// go-libdeluge v0.4.1 - a native deluge RPC client library
+// go-libdeluge v0.5.0 - a native deluge RPC client library
 // Copyright (C) 2015~2020 gdm85 - https://github.com/gdm85/go-libdeluge/
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,13 +51,19 @@ const (
 
 var (
 	// ErrAlreadyClosed is returned when connection is already closed.
-	ErrAlreadyClosed             = errors.New("connection is already closed")
+	ErrAlreadyClosed = errors.New("connection is already closed")
+	// ErrInvalidDictionaryResponse is returned when the expected dictionary as list is not received.
 	ErrInvalidDictionaryResponse = errors.New("expected dictionary as list response")
-	ErrInvalidReturnValue        = errors.New("invalid return value")
-	ErrUnsupportedV1             = errors.New("method not supported by deluge daemon v1")
+	// ErrInvalidReturnValue is returned when the returned value received from server is invalid.
+	ErrInvalidReturnValue = errors.New("invalid return value")
 )
 
+// DelugeClient is an interface for v1.3 and v2 Deluge servers.
 type DelugeClient interface {
+	Connect() error
+	Close() error
+
+	DaemonLogin() error
 	MethodsList() ([]string, error)
 	DaemonVersion() (string, error)
 	GetFreeSpace(string) (int64, error)
@@ -76,22 +82,42 @@ type DelugeClient interface {
 	SetTorrentTracker(id, tracker string) error
 	SetTorrentOptions(id string, options *Options) error
 	SessionState() ([]string, error)
-	KnownAccounts() ([]Account, error)
-	CreateAccount(account Account) (bool, error)
-	UpdateAccount(account Account) (bool, error)
-	RemoveAccount(username string) (bool, error)
 	ForceReannounce(ids []string) error
 	GetAvailablePlugins() ([]string, error)
 	GetEnabledPlugins() ([]string, error)
-	GetAvailablePluginsLookup() (map[string]struct{}, error)
-	GetEnabledPluginsLookup() (map[string]struct{}, error)
 }
 
-type NativeDelugeClient interface {
-	Close() error
-	Connect() error
+// DelugeClientV2 is an interface for v2 Deluge servers.
+type DelugeClientV2 interface {
+	DelugeClient
+
+	KnownAccounts() ([]Account, error)
+	CreateAccount(account Account) (bool, error)
+	RemoveAccount(username string) (bool, error)
+	UpdateAccount(account Account) (bool, error)
 }
 
+// Client is a Deluge RPC client.
+type Client struct {
+	settings     Settings
+	safeConn     io.ReadWriteCloser
+	serial       int64
+	classID      int64
+	v2daemon     bool
+	excludeV2tag string
+
+	DebugServerResponses []*bytes.Buffer
+}
+
+type ClientV2 struct {
+	Client
+}
+
+var _ DelugeClient = &Client{}
+var _ DelugeClient = &ClientV2{}
+var _ DelugeClientV2 = &ClientV2{}
+
+// SerialMismatchError is the error returned when server replied with an out-of-order response.
 type SerialMismatchError struct {
 	ExpectedID int64
 	ReceivedID int64
@@ -103,26 +129,16 @@ func (e SerialMismatchError) Error() string {
 
 // Settings defines all settings for a Deluge client connection.
 type Settings struct {
-	Hostname         string
-	Port             uint
-	Login            string
-	Password         string
-	Logger           *log.Logger
-	ReadWriteTimeout time.Duration // Timeout for read/write operations on the TCP stream.
-	// V2Daemon enables the new v1 protocol for v2 daemons.
-	V2Daemon bool
-	// DebugSaveInteractions is used populate the DebugIncoming slice on the client with
+	Hostname string
+	Port     uint
+	Login    string
+	Password string
+	Logger   *log.Logger
+	// ReadWriteTimeout is the timeout for read/write operations on the TCP stream.
+	ReadWriteTimeout time.Duration
+	// DebugServerResponses is used populate the DebugServerResponses slice on the client with
 	// byte buffers containing the raw bytes as received from the Deluge server.
-	DebugSaveInteractions bool
-}
-
-// Client is a Deluge RPC client.
-type Client struct {
-	settings      Settings
-	safeConn      safeConn
-	serial        int64
-	classID       int64
-	DebugIncoming []*bytes.Buffer
+	DebugServerResponses bool
 }
 
 type safeConn struct {
@@ -130,8 +146,15 @@ type safeConn struct {
 	readWriteTimeout time.Duration
 }
 
-var _ DelugeClient = &Client{}
-var _ NativeDelugeClient = &Client{}
+func newSafeConn(rawConn net.Conn, hostname string, readWriteTimeout time.Duration) *safeConn {
+	var sc safeConn
+	sc.conn = tls.Client(rawConn, &tls.Config{
+		ServerName:         hostname,
+		InsecureSkipVerify: true, // x509: cannot verify signature: algorithm unimplemented
+	})
+	sc.readWriteTimeout = readWriteTimeout
+	return &sc
+}
 
 type rpcResponseTypeID int
 
@@ -223,13 +246,48 @@ func (sc *safeConn) Write(p []byte) (n int, err error) {
 	return sc.conn.Write(p)
 }
 
+func (sc *safeConn) Close() error {
+	if sc.conn == nil {
+		return ErrAlreadyClosed
+	}
+	err := sc.conn.Close()
+	sc.conn = nil
+	return err
+}
+
+// NewV1 returns a Deluge client for v1.3 servers.
+func NewV1(s Settings) *Client {
+	if s.ReadWriteTimeout == time.Duration(0) {
+		s.ReadWriteTimeout = DefaultReadWriteTimeout
+	}
+	return &Client{
+		settings:     s,
+		excludeV2tag: "v2only",
+	}
+}
+
+// NewV2 returns a Deluge client for v1.3 servers.
+func NewV2(s Settings) *ClientV2 {
+	if s.ReadWriteTimeout == time.Duration(0) {
+		s.ReadWriteTimeout = DefaultReadWriteTimeout
+	}
+	return &ClientV2{
+		Client: Client{
+			v2daemon: true,
+			settings: s,
+		},
+	}
+}
+
+// Close closes the connection of a Deluge client.
+func (c *Client) Close() error {
+	return c.safeConn.Close()
+}
+
 // Deluge2ProtocolVersion is the protocol version used with Deluge v2+
 const Deluge2ProtocolVersion = 1
 
 func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictionary) (*DelugeResponse, error) {
-	if c.safeConn.conn == nil {
-		return nil, ErrAlreadyClosed
-	}
 	// generate serial
 	c.serial++
 	if c.serial == math.MaxInt64 {
@@ -262,7 +320,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	l := reqBytes.Len()
 
 	// write to connection without closing it
-	if c.settings.V2Daemon {
+	if c.v2daemon {
 		// on v2+ send the header
 		var header [5]byte
 		header[0] = Deluge2ProtocolVersion
@@ -275,7 +333,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 			c.settings.Logger.Printf("V2 request header: %X", header[:])
 		}
 	}
-	n, err := io.Copy(&c.safeConn, &reqBytes)
+	n, err := io.Copy(c.safeConn, &reqBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -287,17 +345,17 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	}
 
 	// setup a reader pipeline for the response: TCP -> openssl -> ZLib -> (header in V2) rencode -> {Python objects}
-	var src io.Reader = &c.safeConn
+	var src io.Reader = c.safeConn
 
 	// when debugging copy the source bytes as they are received
-	if c.settings.DebugSaveInteractions {
+	if c.settings.DebugServerResponses {
 		var copyOfResponseBytes bytes.Buffer
 		src = io.TeeReader(src, &copyOfResponseBytes)
 
-		c.DebugIncoming = append(c.DebugIncoming, &copyOfResponseBytes)
+		c.DebugServerResponses = append(c.DebugServerResponses, &copyOfResponseBytes)
 	}
 
-	if c.settings.V2Daemon {
+	if c.v2daemon {
 		// on v2+ first identify the header, then use the compressed body (more inefficient)
 		// a zlib header could be automatically detected but it's pointless since we use a flag to identify V2 daemons
 		// (remote endpoint does not version handshakes)
@@ -372,7 +430,7 @@ func (c *Client) handleRPCResponse(d *rencode.Decoder, expectedSerial int64) (*D
 	case rpcResponse:
 		resp.returnValue = respList
 	case rpcError:
-		if c.settings.V2Daemon {
+		if c.v2daemon {
 			var exceptionArgs rencode.List
 			var errDict rencode.Dictionary
 			err = respList.Scan(&resp.ExceptionType, &exceptionArgs, &errDict, &resp.TraceBack)
@@ -405,27 +463,7 @@ func (c *Client) handleRPCResponse(d *rencode.Decoder, expectedSerial int64) (*D
 	return &resp, nil
 }
 
-// New returns a Deluge client.
-func New(s Settings) *Client {
-	if s.ReadWriteTimeout == time.Duration(0) {
-		s.ReadWriteTimeout = DefaultReadWriteTimeout
-	}
-	return &Client{
-		settings: s,
-	}
-}
-
-// Close closes the connection of a Deluge client.
-func (c *Client) Close() error {
-	if c.safeConn.conn == nil {
-		return ErrAlreadyClosed
-	}
-	err := c.safeConn.conn.Close()
-	c.safeConn.conn = nil
-	return err
-}
-
-// Connect performs connection to a Deluge daemon second previously specified settings.
+// Connect performs connection to a Deluge daemon and logs in.
 func (c *Client) Connect() error {
 	dialer := new(net.Dialer)
 	rawConn, err := dialer.Dial("tcp", fmt.Sprintf("%s:%d", c.settings.Hostname, c.settings.Port))
@@ -433,20 +471,30 @@ func (c *Client) Connect() error {
 		return err
 	}
 
-	c.safeConn.conn = tls.Client(rawConn, &tls.Config{
-		ServerName:         c.settings.Hostname,
-		InsecureSkipVerify: true, // x509: cannot verify signature: algorithm unimplemented
-	})
-	c.safeConn.readWriteTimeout = c.settings.ReadWriteTimeout
+	c.safeConn = newSafeConn(rawConn, c.settings.Hostname, c.settings.ReadWriteTimeout)
 
 	if c.settings.Logger != nil {
 		c.settings.Logger.Printf("connected to %s:%d\n", c.settings.Hostname, c.settings.Port)
 	}
 
+	err = c.DaemonLogin()
+	if err != nil {
+		return err
+	}
+
+	if c.settings.Logger != nil {
+		c.settings.Logger.Println("login successful as user", c.settings.Login)
+	}
+
+	return nil
+}
+
+// DaemonLogin performs login to the Deluge daemon.
+func (c *Client) DaemonLogin() error {
 	var kwargs rencode.Dictionary
 
 	// in v2+ the client version must be specified
-	if c.settings.V2Daemon {
+	if c.v2daemon {
 		kwargs.Add("client_version", "2.0.3")
 	}
 
@@ -460,16 +508,7 @@ func (c *Client) Connect() error {
 	}
 
 	// get class of logged-in user
-	err = resp.returnValue.Scan(&c.classID)
-	if err != nil {
-		return err
-	}
-
-	if c.settings.Logger != nil {
-		c.settings.Logger.Println("login successful as user", c.settings.Login)
-	}
-
-	return nil
+	return resp.returnValue.Scan(&c.classID)
 }
 
 // MethodsList returns a list of available methods on server.

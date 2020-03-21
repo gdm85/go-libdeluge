@@ -1,4 +1,4 @@
-// go-libdeluge v0.4.1 - a native deluge RPC client library
+// go-libdeluge v0.5.0 - a native deluge RPC client library
 // Copyright (C) 2015~2020 gdm85 - https://github.com/gdm85/go-libdeluge/
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,11 +16,9 @@
 package main
 
 import (
-	"compress/zlib"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strings"
@@ -43,6 +41,7 @@ var (
 	setLabel             string
 	listLabels           bool
 	v2daemon             bool
+	integrationTests     bool
 	free                 bool
 
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
@@ -63,6 +62,8 @@ func init() {
 	fs.StringVar(&addURI, "add", "", "Add a torrent via magnet URI")
 
 	fs.BoolVar(&v2daemon, "v2", false, "Use protocol compatible with a v2 daemon")
+	fs.BoolVar(&integrationTests, "i", false, "Run integration tests")
+	fs.BoolVar(&integrationTests, "integration-tests", false, "Run integration tests")
 
 	fs.BoolVar(&listTorrents, "e", false, "List all torrents")
 	fs.BoolVar(&listTorrents, "list", false, "List all torrents")
@@ -113,18 +114,29 @@ func main() {
 		logger = log.New(os.Stderr, "DELUGE: ", log.Lshortfile)
 		debugIncoming = true
 	default:
-		fmt.Fprintf(os.Stderr, "ERROR: invalid log level specified\n")
+		fmt.Fprintf(os.Stderr, "ERROR: invalid log level %q specified\n", logLevel)
 		os.Exit(2)
 	}
 
-	deluge := delugeclient.New(delugeclient.Settings{
-		Hostname:              host,
-		Port:                  port,
-		Login:                 username,
-		Password:              password,
-		Logger:                logger,
-		V2Daemon:              v2daemon,
-		DebugSaveInteractions: debugIncoming})
+	settings := delugeclient.Settings{
+		Hostname:             host,
+		Port:                 port,
+		Login:                username,
+		Password:             password,
+		Logger:               logger,
+		DebugServerResponses: debugIncoming}
+
+	if integrationTests {
+		err := runAllIntegrationTests(settings)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+			os.Exit(4)
+		}
+		fmt.Fprintf(os.Stdout, "Integration tests succeeded\n")
+		return
+	}
+
+	deluge := delugeclient.NewV2(settings)
 
 	// perform connection to Deluge server
 	err = deluge.Connect()
@@ -132,6 +144,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "ERROR: connection failed: %v\n", err)
 		os.Exit(3)
 	}
+	defer deluge.Close()
 
 	// print daemon version
 	ver, err := deluge.DaemonVersion()
@@ -197,8 +210,12 @@ func main() {
 			fmt.Fprintf(os.Stderr, "ERROR: no torrent hash specified\n")
 			os.Exit(5)
 		}
-		p := delugeclient.LabelPlugin{deluge}
-		err := p.SetTorrentLabel(torrentHash, setLabel)
+		p, err := deluge.LabelPlugin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: enabled plugins list retrieval: %v\n", err)
+			os.Exit(5)
+		}
+		err = p.SetTorrentLabel(torrentHash, setLabel)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: setting label %q on torrent %q: %v\n", setLabel, torrentHash, err)
 			os.Exit(5)
@@ -206,7 +223,11 @@ func main() {
 	}
 
 	if listLabels {
-		p := delugeclient.LabelPlugin{deluge}
+		p, err := deluge.LabelPlugin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: enabled plugins list retrieval: %v\n", err)
+			os.Exit(5)
+		}
 		labelsByTorrent, err := p.GetTorrentsLabels(delugeclient.StateUnspecified, nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: enabled plugins list retrieval: %v\n", err)
@@ -221,32 +242,6 @@ func main() {
 
 	if listTorrents {
 		torrents, err := deluge.TorrentsStatus(delugeclient.StateUnspecified, nil)
-
-		// store response for testing/development
-		count := len(deluge.DebugIncoming)
-		if count != 0 {
-			buf := deluge.DebugIncoming[count-1]
-			fmt.Println("last call received contained", buf.Len(), "compressed bytes")
-			src, err := zlib.NewReader(buf)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: could not decompress last call test data: %v\n", err)
-				os.Exit(5)
-			}
-			defer src.Close()
-
-			f, err := os.Create("testlist.rnc")
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: could not create last call test data: %v\n", err)
-				os.Exit(5)
-			}
-			defer f.Close()
-
-			_, err = io.Copy(f, src)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: could not write last call test data: %v\n", err)
-				os.Exit(5)
-			}
-		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: could not list all torrents: %v\n", err)
 			os.Exit(6)

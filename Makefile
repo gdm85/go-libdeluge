@@ -1,16 +1,13 @@
-all: test build bin/delugecli
-
-build:
-	go install
+all: bin/delugecli test
 
 build-windows:
-	GOOS=windows GOARCH=amd64 go install
+	GOOS=windows GOARCH=amd64 go build -o bin/delugecli-windows ./cli
 
 test: *.go
 	go test -v
 
 bin/delugecli:
-	go build -o $@ cli/cli.go
+	go build -o $@ ./cli
 
 clean:
 	rm -f bin/delugecli

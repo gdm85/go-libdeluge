@@ -1,4 +1,4 @@
-// go-libdeluge v0.4.1 - a native deluge RPC client library
+// go-libdeluge v0.5.0 - a native deluge RPC client library
 // Copyright (C) 2015~2020 gdm85 - https://github.com/gdm85/go-libdeluge/
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,9 +25,9 @@ import (
 // If a new field is added to this struct it should also be added to the statusKeys map.
 type TorrentStatus struct {
 	ActiveTime          int64
-	CompletedTime       int64
+	CompletedTime       int64 `rencode:"v2only"`
 	DistributedCopies   float32
-	DownloadLocation    string
+	DownloadLocation    string `rencode:"v2only"`
 	DownloadPayloadRate int64
 	ETA                 float32 // most times an integer
 	IsFinished          bool
@@ -121,7 +121,7 @@ func (c *Client) TorrentStatus(hash string) (*TorrentStatus, error) {
 	}
 
 	var ts TorrentStatus
-	err = rd.ToStruct(&ts)
+	err = rd.ToStruct(&ts, c.excludeV2tag)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (c *Client) TorrentsStatus(state TorrentState, hashes []string) (map[string
 		}
 
 		var ts TorrentStatus
-		err = v.ToStruct(&ts)
+		err = v.ToStruct(&ts, c.excludeV2tag)
 		if err != nil {
 			return nil, err
 		}

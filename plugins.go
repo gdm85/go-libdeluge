@@ -1,4 +1,4 @@
-// go-libdeluge v0.4.1 - a native deluge RPC client library
+// go-libdeluge v0.5.0 - a native deluge RPC client library
 // Copyright (C) 2015~2020 gdm85 - https://github.com/gdm85/go-libdeluge/
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,6 +22,24 @@ type LabelPlugin struct {
 	*Client
 }
 
+// LabelPlugin returns the label plugin if enabled or nil.
+// An error is returned if enabled plugins could not be retrieved.
+func (c *Client) LabelPlugin() (*LabelPlugin, error) {
+	plugins, err := c.GetEnabledPlugins()
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range plugins {
+		if p == "Label" {
+			return &LabelPlugin{
+				Client: c,
+			}, nil
+		}
+	}
+
+	return nil, nil
+}
+
 // SetTorrentLabel adds or replaces the label for the specified torrent.
 func (p LabelPlugin) SetTorrentLabel(hash, label string) error {
 	var args rencode.List
@@ -39,7 +57,7 @@ func (p LabelPlugin) SetTorrentLabel(hash, label string) error {
 }
 
 // GetTorrentLabel returns the label of the specified torrent.
-func (c *Client) GetTorrentLabel(hash string) (string, error) {
+func (c *LabelPlugin) GetTorrentLabel(hash string) (string, error) {
 	var args rencode.List
 	args.Add(hash)
 	args.Add(rencode.NewList("label"))
@@ -52,7 +70,7 @@ func (c *Client) GetTorrentLabel(hash string) (string, error) {
 	var s struct {
 		Label string
 	}
-	err = rd.ToStruct(&s)
+	err = rd.ToStruct(&s, "")
 	if err != nil {
 		return "", err
 	}
@@ -61,7 +79,7 @@ func (c *Client) GetTorrentLabel(hash string) (string, error) {
 }
 
 // GetTorrentsLabels filters torrents by state and/or IDs and returns their label.
-func (c *Client) GetTorrentsLabels(state TorrentState, ids []string) (map[string]string, error) {
+func (c *LabelPlugin) GetTorrentsLabels(state TorrentState, ids []string) (map[string]string, error) {
 	var args rencode.List
 	var filterDict rencode.Dictionary
 	if len(ids) != 0 {
@@ -93,7 +111,7 @@ func (c *Client) GetTorrentsLabels(state TorrentState, ids []string) (map[string
 		var s struct {
 			Label string
 		}
-		err = v.ToStruct(&s)
+		err = v.ToStruct(&s, "")
 		if err != nil {
 			return nil, err
 		}

@@ -1,4 +1,4 @@
-// go-libdeluge v0.4.1 - a native deluge RPC client library
+// go-libdeluge v0.5.0 - a native deluge RPC client library
 // Copyright (C) 2015~2020 gdm85 - https://github.com/gdm85/go-libdeluge/
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -64,7 +64,7 @@ func (c *Client) GetLibtorrentVersion() (string, error) {
 // AddTorrentMagnet adds a torrent via magnet URI and returns the torrent hash.
 func (c *Client) AddTorrentMagnet(magnetURI string, options *Options) (string, error) {
 	var args rencode.List
-	args.Add(magnetURI, options.toDictionary(c.settings.V2Daemon))
+	args.Add(magnetURI, options.toDictionary(c.v2daemon))
 
 	resp, err := c.rpc("core.add_torrent_magnet", args, rencode.Dictionary{})
 	if err != nil {
@@ -90,7 +90,7 @@ func (c *Client) AddTorrentMagnet(magnetURI string, options *Options) (string, e
 // AddTorrentURL adds a torrent via a URL and returns the torrent hash.
 func (c *Client) AddTorrentURL(url string, options *Options) (string, error) {
 	var args rencode.List
-	args.Add(url, options.toDictionary(c.settings.V2Daemon))
+	args.Add(url, options.toDictionary(c.v2daemon))
 
 	resp, err := c.rpc("core.add_torrent_url", args, rencode.Dictionary{})
 	if err != nil {
@@ -294,7 +294,7 @@ func (c *Client) SessionState() ([]string, error) {
 // SetTorrentOptions updates options for the torrent with the given hash.
 func (c *Client) SetTorrentOptions(id string, options *Options) error {
 	var args rencode.List
-	args.Add(id, options.toDictionary(c.settings.V2Daemon))
+	args.Add(id, options.toDictionary(c.v2daemon))
 
 	resp, err := c.rpc("core.set_torrent_options", args, rencode.Dictionary{})
 	if err != nil {
@@ -333,11 +333,7 @@ func (c *Client) SetTorrentTracker(id, trackerURL string) error {
 
 // KnownAccounts returns all known accounts, including password and
 // permission levels.
-func (c *Client) KnownAccounts() ([]Account, error) {
-	if !c.settings.V2Daemon {
-		return nil, ErrUnsupportedV1
-	}
-
+func (c *ClientV2) KnownAccounts() ([]Account, error) {
 	resp, err := c.rpc("core.get_known_accounts", rencode.List{}, rencode.Dictionary{})
 	if err != nil {
 		return nil, err
@@ -375,11 +371,7 @@ func (c *Client) KnownAccounts() ([]Account, error) {
 // CreateAccount creates a new Deluge user with the supplied username,
 // password and permission level. The authenticated user must have an
 // authLevel of ADMIN to succeed.
-func (c *Client) CreateAccount(account Account) (bool, error) {
-	if !c.settings.V2Daemon {
-		return false, ErrUnsupportedV1
-	}
-
+func (c *ClientV2) CreateAccount(account Account) (bool, error) {
 	resp, err := c.rpc("core.create_account", account.toList(), rencode.Dictionary{})
 	if err != nil {
 		return false, err
@@ -399,11 +391,7 @@ func (c *Client) CreateAccount(account Account) (bool, error) {
 
 // UpdateAccount sets a new password and permission level for a account.
 // The authenticated user must have an authLevel of ADMIN to succeed.
-func (c *Client) UpdateAccount(account Account) (bool, error) {
-	if !c.settings.V2Daemon {
-		return false, ErrUnsupportedV1
-	}
-
+func (c *ClientV2) UpdateAccount(account Account) (bool, error) {
 	resp, err := c.rpc("core.update_account", account.toList(), rencode.Dictionary{})
 	if err != nil {
 		return false, err
@@ -423,11 +411,7 @@ func (c *Client) UpdateAccount(account Account) (bool, error) {
 
 // RemoveAccount will delete an existing username.
 // The authenticated user must have an authLevel of ADMIN to succeed.
-func (c *Client) RemoveAccount(username string) (bool, error) {
-	if !c.settings.V2Daemon {
-		return false, ErrUnsupportedV1
-	}
-
+func (c *ClientV2) RemoveAccount(username string) (bool, error) {
 	var args rencode.List
 	args.Add(username)
 
@@ -467,28 +451,6 @@ func (c *Client) ForceReannounce(ids []string) error {
 // GetEnabledPlugins returns a list of enabled plugins.
 func (c *Client) GetEnabledPlugins() ([]string, error) {
 	return c.rpcWithStringsResult("core.get_enabled_plugins")
-}
-
-// GetEnabledPluginsLookup returns a lookup map of the enabled plugins.
-func (c *Client) GetEnabledPluginsLookup() (map[string]struct{}, error) {
-	return c.getPluginsListLookup("core.get_enabled_plugins")
-}
-
-// GetAvailablePluginsLookup returns a lookup map of the available plugins.
-func (c *Client) GetAvailablePluginsLookup() (map[string]struct{}, error) {
-	return c.getPluginsListLookup("core.get_available_plugins")
-}
-
-func (c *Client) getPluginsListLookup(method string) (map[string]struct{}, error) {
-	plugins, err := c.rpcWithStringsResult(method)
-	if err != nil {
-		return nil, err
-	}
-	lookup := map[string]struct{}{}
-	for _, p := range plugins {
-		lookup[p] = struct{}{}
-	}
-	return lookup, nil
 }
 
 // GetAvailablePlugins returns a list of available plugins.
