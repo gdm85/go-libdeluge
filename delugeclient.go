@@ -105,7 +105,7 @@ type Client struct {
 	v2daemon     bool
 	excludeV2tag string
 
-	DebugIncoming []*bytes.Buffer
+	DebugServerResponses []*bytes.Buffer
 }
 
 type ClientV2 struct {
@@ -128,15 +128,16 @@ func (e SerialMismatchError) Error() string {
 
 // Settings defines all settings for a Deluge client connection.
 type Settings struct {
-	Hostname         string
-	Port             uint
-	Login            string
-	Password         string
-	Logger           *log.Logger
-	ReadWriteTimeout time.Duration // Timeout for read/write operations on the TCP stream.
-	// DebugSaveInteractions is used populate the DebugIncoming slice on the client with
+	Hostname string
+	Port     uint
+	Login    string
+	Password string
+	Logger   *log.Logger
+	// ReadWriteTimeout is the timeout for read/write operations on the TCP stream.
+	ReadWriteTimeout time.Duration
+	// DebugServerResponses is used populate the DebugServerResponses slice on the client with
 	// byte buffers containing the raw bytes as received from the Deluge server.
-	DebugSaveInteractions bool
+	DebugServerResponses bool
 }
 
 type safeConn struct {
@@ -335,11 +336,11 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	var src io.Reader = &c.safeConn
 
 	// when debugging copy the source bytes as they are received
-	if c.settings.DebugSaveInteractions {
+	if c.settings.DebugServerResponses {
 		var copyOfResponseBytes bytes.Buffer
 		src = io.TeeReader(src, &copyOfResponseBytes)
 
-		c.DebugIncoming = append(c.DebugIncoming, &copyOfResponseBytes)
+		c.DebugServerResponses = append(c.DebugServerResponses, &copyOfResponseBytes)
 	}
 
 	if c.v2daemon {

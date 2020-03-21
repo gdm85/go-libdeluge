@@ -16,11 +16,16 @@ const (
 
 func runAllIntegrationTests(settings delugeclient.Settings) error {
 	var deluge delugeclient.DelugeClient
+	var c *delugeclient.Client
+	settings.DebugServerResponses = true
 
 	if v2daemon {
-		deluge = delugeclient.NewV2(settings)
+		cli := delugeclient.NewV2(settings)
+		c = &cli.Client
+		deluge = cli
 	} else {
-		deluge = delugeclient.NewV1(settings)
+		c = delugeclient.NewV1(settings)
+		deluge = c
 	}
 
 	// perform connection to Deluge server
@@ -100,4 +105,19 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 	}
 
 	return nil
+}
+
+func printServerResponse(c *delugeclient.Client) {
+	if len(c.DebugServerResponses) != 1 {
+		panic("BUG: expected exactly one response")
+	}
+
+	// store response for testing/development
+	buf := c.DebugServerResponses[0]
+	fmt.Println("last call received contained", buf.Len(), "compressed bytes")
+
+	fmt.Printf("payload: %X\n", buf.Bytes())
+
+	c.DebugServerResponses = nil
+
 }

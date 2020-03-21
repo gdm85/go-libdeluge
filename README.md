@@ -34,7 +34,7 @@ The library by itself is a Go package and needs to be embedded in an UI or CLI a
 	// ... use the 'deluge' client methods
 ```
 
-To debug the library you may want to set `DebugSaveInteractions` to true.
+To debug the library you may want to set `DebugServerResponses` to true.
 
 ## Example CLI application
 

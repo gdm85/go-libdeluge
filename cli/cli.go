@@ -16,11 +16,9 @@
 package main
 
 import (
-	"compress/zlib"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strings"
@@ -121,12 +119,12 @@ func main() {
 	}
 
 	settings := delugeclient.Settings{
-		Hostname:              host,
-		Port:                  port,
-		Login:                 username,
-		Password:              password,
-		Logger:                logger,
-		DebugSaveInteractions: debugIncoming}
+		Hostname:             host,
+		Port:                 port,
+		Login:                username,
+		Password:             password,
+		Logger:               logger,
+		DebugServerResponses: debugIncoming}
 
 	if integrationTests {
 		err := runAllIntegrationTests(settings)
@@ -244,32 +242,6 @@ func main() {
 
 	if listTorrents {
 		torrents, err := deluge.TorrentsStatus(delugeclient.StateUnspecified, nil)
-
-		// store response for testing/development
-		count := len(deluge.DebugIncoming)
-		if count != 0 {
-			buf := deluge.DebugIncoming[count-1]
-			fmt.Println("last call received contained", buf.Len(), "compressed bytes")
-			src, err := zlib.NewReader(buf)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: could not decompress last call test data: %v\n", err)
-				os.Exit(5)
-			}
-			defer src.Close()
-
-			f, err := os.Create("testlist.rnc")
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: could not create last call test data: %v\n", err)
-				os.Exit(5)
-			}
-			defer f.Close()
-
-			_, err = io.Copy(f, src)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: could not write last call test data: %v\n", err)
-				os.Exit(5)
-			}
-		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: could not list all torrents: %v\n", err)
 			os.Exit(6)
