@@ -53,7 +53,7 @@ This will start downloading the latest Ubuntu 14.04 LTS server ISO. Multiple mag
 
 # Supported deluge versions
 
-Both deluge v2.0+ and v1.3+ are supported; in order to use the modern deluge v2 daemon you must set `V2Daemon` to true in `delugeclient.Settings`.
+Both deluge v2.0+ and v1.3+ are supported with the two different constructors `NewV2` and `NewV1`.
 
 # RPC API supported methods
 

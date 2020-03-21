@@ -120,14 +120,25 @@ func main() {
 		os.Exit(2)
 	}
 
-	deluge := delugeclient.New(delugeclient.Settings{
+	settings := delugeclient.Settings{
 		Hostname:              host,
 		Port:                  port,
 		Login:                 username,
 		Password:              password,
 		Logger:                logger,
-		V2Daemon:              v2daemon,
-		DebugSaveInteractions: debugIncoming})
+		DebugSaveInteractions: debugIncoming}
+
+	if integrationTests {
+		err := runAllIntegrationTests(settings)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+			os.Exit(4)
+		}
+		fmt.Fprintf(os.Stdout, "Integration tests succeeded\n")
+		return
+	}
+
+	deluge := delugeclient.NewV2(settings)
 
 	// perform connection to Deluge server
 	err = deluge.Connect()
@@ -136,16 +147,6 @@ func main() {
 		os.Exit(3)
 	}
 	defer deluge.Close()
-
-	if integrationTests {
-		err := runAllIntegrationTests(deluge)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
-			os.Exit(4)
-		}
-		fmt.Fprintf(os.Stdout, "Integration tests succeeded\n")
-		return
-	}
 
 	// print daemon version
 	ver, err := deluge.DaemonVersion()
@@ -211,7 +212,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "ERROR: no torrent hash specified\n")
 			os.Exit(5)
 		}
-		p := delugeclient.LabelPlugin{Client: deluge}
+		p := delugeclient.LabelPlugin{Client: &deluge.Client}
 		err := p.SetTorrentLabel(torrentHash, setLabel)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: setting label %q on torrent %q: %v\n", setLabel, torrentHash, err)
@@ -220,7 +221,7 @@ func main() {
 	}
 
 	if listLabels {
-		p := delugeclient.LabelPlugin{Client: deluge}
+		p := delugeclient.LabelPlugin{Client: &deluge.Client}
 		labelsByTorrent, err := p.GetTorrentsLabels(delugeclient.StateUnspecified, nil)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: enabled plugins list retrieval: %v\n", err)

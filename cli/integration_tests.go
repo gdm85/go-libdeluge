@@ -2,18 +2,36 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"time"
 
 	delugeclient "github.com/gdm85/go-libdeluge"
 )
 
 const (
-	testMagnetHash = "C1939CA413B9AFCC34EA0CF3C128574E93FF6CB0"
-	testMagnetURI  = `magnet:?xt=urn:btih:C1939CA413B9AFCC34EA0CF3C128574E93FF6CB0&tr=http%3A%2F%2Ftorrent.ubuntu.com%3A6969%2Fannounce`
+	testMagnetHash = "c1939ca413b9afcc34ea0cf3c128574e93ff6cb0"
+	testMagnetURI  = `magnet:?xt=urn:btih:c1939ca413b9afcc34ea0cf3c128574e93ff6cb0&tr=http%3A%2F%2Ftorrent.ubuntu.com%3A6969%2Fannounce`
 )
 
-func runAllIntegrationTests(deluge *delugeclient.Client) error {
-	_, err := deluge.DaemonVersion()
+func runAllIntegrationTests(settings delugeclient.Settings) error {
+	var deluge delugeclient.DelugeClient
+
+	if v2daemon {
+		deluge = delugeclient.NewV2(settings)
+	} else {
+		deluge = delugeclient.NewV1(settings)
+	}
+
+	// perform connection to Deluge server
+	err := deluge.Connect()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: connection failed: %v\n", err)
+		os.Exit(3)
+	}
+	defer deluge.Close()
+
+	_, err = deluge.DaemonVersion()
 	if err != nil {
 		return err
 	}
@@ -42,6 +60,7 @@ func runAllIntegrationTests(deluge *delugeclient.Client) error {
 	}
 
 	if v2daemon {
+		deluge := deluge.(delugeclient.DelugeClientV2)
 		_, err = deluge.KnownAccounts()
 		if err != nil {
 			return err
@@ -56,7 +75,7 @@ func runAllIntegrationTests(deluge *delugeclient.Client) error {
 		return errors.New("torrent was not added")
 	}
 
-	const maxAttempts = 10
+	const maxAttempts = 1
 	found := false
 	attempts := 0
 	for !found {

@@ -51,13 +51,18 @@ const (
 
 var (
 	// ErrAlreadyClosed is returned when connection is already closed.
-	ErrAlreadyClosed             = errors.New("connection is already closed")
+	ErrAlreadyClosed = errors.New("connection is already closed")
+	// ErrInvalidDictionaryResponse is returned when the expected dictionary as list is not received.
 	ErrInvalidDictionaryResponse = errors.New("expected dictionary as list response")
-	ErrInvalidReturnValue        = errors.New("invalid return value")
-	ErrUnsupportedV1             = errors.New("method not supported by deluge daemon v1")
+	// ErrInvalidReturnValue is returned when the returned value received from server is invalid.
+	ErrInvalidReturnValue = errors.New("invalid return value")
 )
 
+// DelugeClient is an interface for v1.3 and v2 Deluge servers.
 type DelugeClient interface {
+	Connect() error
+	Close() error
+
 	MethodsList() ([]string, error)
 	DaemonVersion() (string, error)
 	GetFreeSpace(string) (int64, error)
@@ -76,10 +81,6 @@ type DelugeClient interface {
 	SetTorrentTracker(id, tracker string) error
 	SetTorrentOptions(id string, options *Options) error
 	SessionState() ([]string, error)
-	KnownAccounts() ([]Account, error)
-	CreateAccount(account Account) (bool, error)
-	UpdateAccount(account Account) (bool, error)
-	RemoveAccount(username string) (bool, error)
 	ForceReannounce(ids []string) error
 	GetAvailablePlugins() ([]string, error)
 	GetEnabledPlugins() ([]string, error)
@@ -87,11 +88,37 @@ type DelugeClient interface {
 	GetEnabledPluginsLookup() (map[string]struct{}, error)
 }
 
-type NativeDelugeClient interface {
-	Close() error
-	Connect() error
+// DelugeClientV2 is an interface for v2 Deluge servers.
+type DelugeClientV2 interface {
+	DelugeClient
+
+	KnownAccounts() ([]Account, error)
+	CreateAccount(account Account) (bool, error)
+	RemoveAccount(username string) (bool, error)
+	UpdateAccount(account Account) (bool, error)
 }
 
+// Client is a Deluge RPC client.
+type Client struct {
+	settings     Settings
+	safeConn     safeConn
+	serial       int64
+	classID      int64
+	v2daemon     bool
+	excludeV2tag string
+
+	DebugIncoming []*bytes.Buffer
+}
+
+type ClientV2 struct {
+	Client
+}
+
+var _ DelugeClient = &Client{}
+var _ DelugeClient = &ClientV2{}
+var _ DelugeClientV2 = &ClientV2{}
+
+// SerialMismatchError is the error returned when server replied with an out-of-order response.
 type SerialMismatchError struct {
 	ExpectedID int64
 	ReceivedID int64
@@ -109,29 +136,15 @@ type Settings struct {
 	Password         string
 	Logger           *log.Logger
 	ReadWriteTimeout time.Duration // Timeout for read/write operations on the TCP stream.
-	// V2Daemon enables the new v1 protocol for v2 daemons.
-	V2Daemon bool
 	// DebugSaveInteractions is used populate the DebugIncoming slice on the client with
 	// byte buffers containing the raw bytes as received from the Deluge server.
 	DebugSaveInteractions bool
-}
-
-// Client is a Deluge RPC client.
-type Client struct {
-	settings      Settings
-	safeConn      safeConn
-	serial        int64
-	classID       int64
-	DebugIncoming []*bytes.Buffer
 }
 
 type safeConn struct {
 	conn             *tls.Conn
 	readWriteTimeout time.Duration
 }
-
-var _ DelugeClient = &Client{}
-var _ NativeDelugeClient = &Client{}
 
 type rpcResponseTypeID int
 
@@ -223,6 +236,40 @@ func (sc *safeConn) Write(p []byte) (n int, err error) {
 	return sc.conn.Write(p)
 }
 
+// NewV1 returns a Deluge client for v1.3 servers.
+func NewV1(s Settings) *Client {
+	if s.ReadWriteTimeout == time.Duration(0) {
+		s.ReadWriteTimeout = DefaultReadWriteTimeout
+	}
+	return &Client{
+		settings:     s,
+		excludeV2tag: "v2only",
+	}
+}
+
+// NewV2 returns a Deluge client for v1.3 servers.
+func NewV2(s Settings) *ClientV2 {
+	if s.ReadWriteTimeout == time.Duration(0) {
+		s.ReadWriteTimeout = DefaultReadWriteTimeout
+	}
+	return &ClientV2{
+		Client: Client{
+			v2daemon: true,
+			settings: s,
+		},
+	}
+}
+
+// Close closes the connection of a Deluge client.
+func (c *Client) Close() error {
+	if c.safeConn.conn == nil {
+		return ErrAlreadyClosed
+	}
+	err := c.safeConn.conn.Close()
+	c.safeConn.conn = nil
+	return err
+}
+
 // Deluge2ProtocolVersion is the protocol version used with Deluge v2+
 const Deluge2ProtocolVersion = 1
 
@@ -262,7 +309,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 	l := reqBytes.Len()
 
 	// write to connection without closing it
-	if c.settings.V2Daemon {
+	if c.v2daemon {
 		// on v2+ send the header
 		var header [5]byte
 		header[0] = Deluge2ProtocolVersion
@@ -297,7 +344,7 @@ func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictio
 		c.DebugIncoming = append(c.DebugIncoming, &copyOfResponseBytes)
 	}
 
-	if c.settings.V2Daemon {
+	if c.v2daemon {
 		// on v2+ first identify the header, then use the compressed body (more inefficient)
 		// a zlib header could be automatically detected but it's pointless since we use a flag to identify V2 daemons
 		// (remote endpoint does not version handshakes)
@@ -372,7 +419,7 @@ func (c *Client) handleRPCResponse(d *rencode.Decoder, expectedSerial int64) (*D
 	case rpcResponse:
 		resp.returnValue = respList
 	case rpcError:
-		if c.settings.V2Daemon {
+		if c.v2daemon {
 			var exceptionArgs rencode.List
 			var errDict rencode.Dictionary
 			err = respList.Scan(&resp.ExceptionType, &exceptionArgs, &errDict, &resp.TraceBack)
@@ -405,26 +452,6 @@ func (c *Client) handleRPCResponse(d *rencode.Decoder, expectedSerial int64) (*D
 	return &resp, nil
 }
 
-// New returns a Deluge client.
-func New(s Settings) *Client {
-	if s.ReadWriteTimeout == time.Duration(0) {
-		s.ReadWriteTimeout = DefaultReadWriteTimeout
-	}
-	return &Client{
-		settings: s,
-	}
-}
-
-// Close closes the connection of a Deluge client.
-func (c *Client) Close() error {
-	if c.safeConn.conn == nil {
-		return ErrAlreadyClosed
-	}
-	err := c.safeConn.conn.Close()
-	c.safeConn.conn = nil
-	return err
-}
-
 // Connect performs connection to a Deluge daemon second previously specified settings.
 func (c *Client) Connect() error {
 	dialer := new(net.Dialer)
@@ -446,7 +473,7 @@ func (c *Client) Connect() error {
 	var kwargs rencode.Dictionary
 
 	// in v2+ the client version must be specified
-	if c.settings.V2Daemon {
+	if c.v2daemon {
 		kwargs.Add("client_version", "2.0.3")
 	}
 

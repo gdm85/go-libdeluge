@@ -52,7 +52,7 @@ func (c *Client) GetTorrentLabel(hash string) (string, error) {
 	var s struct {
 		Label string
 	}
-	err = rd.ToStruct(&s)
+	err = rd.ToStruct(&s, "")
 	if err != nil {
 		return "", err
 	}
@@ -93,7 +93,7 @@ func (c *Client) GetTorrentsLabels(state TorrentState, ids []string) (map[string
 		var s struct {
 			Label string
 		}
-		err = v.ToStruct(&s)
+		err = v.ToStruct(&s, "")
 		if err != nil {
 			return nil, err
 		}
