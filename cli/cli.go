@@ -43,6 +43,7 @@ var (
 	v2daemon             bool
 	integrationTests     bool
 	free                 bool
+	testListenPort       bool
 
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
 )
@@ -81,6 +82,9 @@ func init() {
 
 	fs.BoolVar(&free, "f", false, "Display free space")
 	fs.BoolVar(&free, "free", false, "Display free space")
+
+	fs.BoolVar(&testListenPort, "o", false, "Test listen port")
+	fs.BoolVar(&testListenPort, "test-listen-port", false, "Test listen port")
 
 	fs.BoolVar(&listAccounts, "list-accounts", false, "List all known user accounts")
 }
@@ -266,5 +270,14 @@ func main() {
 		if err := je.Encode(accounts); err != nil {
 			os.Exit(7)
 		}
+	}
+
+	if testListenPort {
+		success, err := deluge.TestListenPort()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: could not test listen port: %v\n", err)
+			os.Exit(6)
+		}
+		fmt.Printf("test listen port: %v\n", success)
 	}
 }

@@ -466,3 +466,22 @@ func sliceToRencodeList(s []string) rencode.List {
 
 	return list
 }
+
+// TestListenPort checks if the active port is open.
+func (c *Client) TestListenPort() (bool, error) {
+	resp, err := c.rpc("core.test_listen_port", rencode.List{}, rencode.Dictionary{})
+	if err != nil {
+		return false, err
+	}
+	if resp.IsError() {
+		return false, resp.RPCError
+	}
+
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return false, ErrInvalidReturnValue
+	}
+	success := vals[0]
+
+	return success.(bool), nil
+}

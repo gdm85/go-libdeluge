@@ -117,7 +117,7 @@ Both deluge v2.0+ and v1.3+ are supported with the two different constructors `N
 * [ ] `core.set_config`
 * [x] `core.set_torrent_options`
 * [x] `core.set_torrent_trackers`
-* [ ] `core.test_listen_port`
+* [x] `core.test_listen_port`
 * [x] `core.update_account`
 * [ ] `core.upload_plugin`
 
