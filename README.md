@@ -142,11 +142,11 @@ Plugins can be used by calling the relative method and checking if the result is
 
 ### RPC API supported methods
 
-* [ ] `label.add`
+* [x] `label.add`
 * [ ] `label.get_config`
 * [ ] `label.get_labels`
 * [ ] `label.get_options`
-* [ ] `label.remove`
+* [x] `label.remove`
 * [ ] `label.set_config`
 * [ ] `label.set_options`
 * [x] `label.set_torrent`

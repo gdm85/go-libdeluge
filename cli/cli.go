@@ -39,6 +39,8 @@ var (
 	listAccounts         bool
 	torrentHash          string
 	setLabel             string
+	addLabel string
+	removeLabel string
 	listLabels           bool
 	v2daemon             bool
 	integrationTests     bool
@@ -77,6 +79,10 @@ func init() {
 	fs.StringVar(&torrentHash, "t", "", "Operate on specified torrent hash")
 	fs.StringVar(&setLabel, "set-label", "", "Set label on torrent")
 	fs.StringVar(&setLabel, "b", "", "Set label on torrent")
+	fs.StringVar(&addLabel, "add-label", "", "Add label on torrent")
+	fs.StringVar(&addLabel, "c", "", "Add label on torrent")
+	fs.StringVar(&removeLabel, "remove-label", "", "Remove label on torrent")
+	fs.StringVar(&removeLabel, "r", "", "Remove label on torrent")
 	fs.BoolVar(&listLabels, "list-labels", false, "List all torrents' labels")
 	fs.BoolVar(&listLabels, "g", false, "List all torrents' labels")
 
@@ -222,6 +228,40 @@ func main() {
 		err = p.SetTorrentLabel(torrentHash, setLabel)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: setting label %q on torrent %q: %v\n", setLabel, torrentHash, err)
+			os.Exit(5)
+		}
+	}
+
+	if addLabel != "" {
+		if torrentHash != "" {
+			fmt.Fprintf(os.Stderr, "ERROR: no torrent hash should be specified\n")
+			os.Exit(5)
+		}
+		p, err := deluge.LabelPlugin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: label plugin: %v\n", err)
+			os.Exit(5)
+		}
+		err = p.AddLabel(addLabel)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: adding label %q: %v\n", addLabel, err)
+			os.Exit(5)
+		}
+	}
+
+	if removeLabel != "" {
+		if torrentHash != "" {
+			fmt.Fprintf(os.Stderr, "ERROR: no torrent hash should be specified\n")
+			os.Exit(5)
+		}
+		p, err := deluge.LabelPlugin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: label plugin: %v\n", err)
+			os.Exit(5)
+		}
+		err = p.RemoveLabel(removeLabel)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: removing label %q: %v\n", addLabel, err)
 			os.Exit(5)
 		}
 	}

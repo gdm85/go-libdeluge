@@ -56,6 +56,38 @@ func (p LabelPlugin) SetTorrentLabel(hash, label string) error {
 	return nil
 }
 
+// AddLabel adds a new label definition.
+func (p LabelPlugin) AddLabel(label string) error {
+	var args rencode.List
+	args.Add(label)
+
+	resp, err := p.rpc("label.add", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return nil
+}
+
+// RemoveLabel removes a label definition.
+func (p LabelPlugin) RemoveLabel(label string) error {
+	var args rencode.List
+	args.Add(label)
+
+	resp, err := p.rpc("label.remove", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return nil
+}
+
 // GetTorrentLabel returns the label of the specified torrent.
 func (c *LabelPlugin) GetTorrentLabel(hash string) (string, error) {
 	var args rencode.List
