@@ -49,7 +49,6 @@ func TestDefaultEncode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("encoded options: %#v\n", m)
 
 	if _, ok := m["stop_at_ratio"]; !ok {
 		t.Errorf("expected key %q not found", "stop_at_ratio")
@@ -65,7 +64,6 @@ func TestOptionsEncodeV1(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("encoded options: %#v\n", m)
 
 	if _, ok := m["compact_allocation"]; !ok {
 		t.Errorf("expected key %q not found", "compact_allocation")
@@ -92,7 +90,6 @@ func TestOptionsEncodeV2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("encoded options: %#v\n", m)
 
 	if _, ok := m["compact_allocation"]; ok {
 		t.Errorf("unexpected key %q found", "compact_allocation")

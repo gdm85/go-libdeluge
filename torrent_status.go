@@ -25,7 +25,8 @@ import (
 // If a new field is added to this struct it should also be added to the statusKeys map.
 type TorrentStatus struct {
 	ActiveTime          int64
-	CompletedTime       int64 `rencode:"v2only"`
+	TimeAdded           float32 // most times an integer
+	CompletedTime       int64   `rencode:"v2only"`
 	DistributedCopies   float32
 	DownloadLocation    string `rencode:"v2only"`
 	DownloadPayloadRate int64
@@ -79,7 +80,6 @@ const (
 // See current list at https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L1033-L1143
 var statusKeys = rencode.NewList(
 	"state",
-	"download_location",
 	"tracker_host",
 	"tracker_status",
 	"next_announce",
@@ -106,7 +106,9 @@ var statusKeys = rencode.NewList(
 	"is_finished",
 	"active_time",
 	"seeding_time",
-	"completed_time",
+	"time_added",
+	"completed_time",    // v2-only
+	"download_location", // v2-only
 	"private")
 
 // TorrentStatus returns the status of the torrent with specified hash.

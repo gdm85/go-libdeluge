@@ -39,8 +39,8 @@ var (
 	listAccounts         bool
 	torrentHash          string
 	setLabel             string
-	addLabel string
-	removeLabel string
+	addLabel             string
+	removeLabel          string
 	listLabels           bool
 	v2daemon             bool
 	integrationTests     bool
