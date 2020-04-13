@@ -21,17 +21,17 @@ make
 The library by itself is a Go package and needs to be embedded in an UI or CLI application.
 
 ```go
-	deluge := delugeclient.New(delugeclient.Settings{
+	deluge := delugeclient.NewV2(delugeclient.Settings{
 		Hostname:              "localhost",
 		Port:                  58846,
 		Login:                 "localclient",
 		Password:              "*************",
-		V2Daemon:              v2daemon})
+	})
 
 	// perform connection to Deluge server
 	err := deluge.Connect()
 
-	// ... use the 'deluge' client methods
+	// ... use the client methods
 ```
 
 To debug the library you may want to set `DebugServerResponses` to true.
@@ -131,7 +131,8 @@ Plugins can be used by calling the relative method and checking if the result is
 		panic(err)
 	}
 	if p == nil {
-		panic("Label plugin not availble")
+		println("Label plugin not available")
+		return
 	}
 
 	// call plugin methods
