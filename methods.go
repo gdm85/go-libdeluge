@@ -113,6 +113,32 @@ func (c *Client) AddTorrentURL(url string, options *Options) (string, error) {
 	return string(torrentHash.([]uint8)), nil
 }
 
+// AddTorrentFile adds a torrent via a base64 encoded file and returns the torrent hash.
+func (c *Client) AddTorrentFile(fileName, fileContentBase64 string, options *Options) (string, error) {
+	var args rencode.List
+	args.Add(fileName, fileContentBase64, options.toDictionary(c.v2daemon))
+
+	resp, err := c.rpc("core.add_torrent_file", args, rencode.Dictionary{})
+	if err != nil {
+		return "", err
+	}
+	if resp.IsError() {
+		return "", resp.RPCError
+	}
+
+	// returned hash may be nil if torrent was already added
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return "", ErrInvalidReturnValue
+	}
+	torrentHash := vals[0]
+	//TODO: is this nil comparison valid?
+	if torrentHash == nil {
+		return "", nil
+	}
+	return string(torrentHash.([]uint8)), nil
+}
+
 // TorrentError is a tuple of a torrent id and an error message, returned by
 // methods that manipulate many torrents at once.
 type TorrentError struct {
