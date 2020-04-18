@@ -1,3 +1,5 @@
+// +build integration
+
 // go-libdeluge v0.5.1 - a native deluge RPC client library
 // Copyright (C) 2015~2020 gdm85 - https://github.com/gdm85/go-libdeluge/
 // This program is free software; you can redistribute it and/or
@@ -99,6 +101,15 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 		return err
 	}
 	printServerResponse("AddTorrentMagnet", c)
+	if torrentHash == "" {
+		return errors.New("torrent was not added")
+	}
+
+	torrentHash, err = deluge.AddTorrentFile("ubuntu-14.04.6-desktop-amd64.iso.torrent", ubuntu14TorrentBase64, nil)
+	if err != nil {
+		return err
+	}
+	printServerResponse("AddTorrentFile", c)
 	if torrentHash == "" {
 		return errors.New("torrent was not added")
 	}
