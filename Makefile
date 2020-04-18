@@ -1,15 +1,15 @@
 all: bin/delugecli test
 
-build-windows:
-	GOOS=windows GOARCH=amd64 go build -o bin/delugecli-windows ./cli
+bin/delugecli-windows:
+	GOOS=windows GOARCH=amd64 go build -o $@ ./delugecli
 
 test: *.go
 	go test -v
 
 bin/delugecli:
-	go build -o $@ ./cli
+	go build -o $@ ./delugecli
 
 clean:
-	rm -f bin/delugecli
+	rm -f bin/delugecli bin/delugecli-windows
 
-.PHONY: all build test clean bin/delugecli build-windows
+.PHONY: all build test clean bin/delugecli bin/delugecli-windows
