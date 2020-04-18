@@ -1,4 +1,4 @@
-// +build integration integration_v2
+// +build integration,integration_v2,!integration_v1
 
 package main
 

@@ -21,9 +21,9 @@ fi
 set -e
 
 if [ "$1" = "--v2" ]; then
-    TAG=integration_v2
+    BIN=inttest2
 elif [ "$1" = "--v1" ]; then
-    TAG=integration_v1
+    BIN=inttest1
 else
     echo "ERROR: invalid argument" 1>&2
     exit 2
@@ -48,4 +48,5 @@ while ! ss --no-header --listening --numeric --tcp | grep -qF ':58846'; do
 done
 
 ## run all integration tests
-go test -v -tags=integration,$TAG ./integration
+chmod +x bin/$BIN
+bin/$BIN -test.v
