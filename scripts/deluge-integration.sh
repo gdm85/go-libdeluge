@@ -21,9 +21,9 @@ fi
 set -e
 
 if [ "$1" = "--v2" ]; then
-    DCLI_ARGS="-v2"
+    TAG=integration_v2
 elif [ "$1" = "--v1" ]; then
-    DCLI_ARGS=""
+    TAG=integration_v1
 else
     echo "ERROR: invalid argument" 1>&2
     exit 2
@@ -37,12 +37,6 @@ echo 'localclient:deluge:10' > $HOME/.config/deluge/auth
 deluged --do-not-daemonize --loglevel info &
 trap "kill $!" EXIT
 
-## default password
-export DELUGE_PASSWORD="deluge"
-
-## integration tests
-chmod +x bin/delugecli
-
 I=0
 while ! ss --no-header --listening --numeric --tcp | grep -qF ':58846'; do
   sleep 1
@@ -54,4 +48,4 @@ while ! ss --no-header --listening --numeric --tcp | grep -qF ':58846'; do
 done
 
 ## run all integration tests
-bin/delugecli -host 127.0.0.1 -integration-tests $DCLI_ARGS
+go test -v -tags=integration,$TAG ./integration
