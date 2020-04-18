@@ -89,8 +89,8 @@ type DelugeClient interface {
 	TestListenPort() (bool, error)
 }
 
-// DelugeClientV2 is an interface for v2 Deluge servers.
-type DelugeClientV2 interface {
+// V2 is an interface for v2 Deluge clients.
+type V2 interface {
 	DelugeClient
 
 	KnownAccounts() ([]Account, error)
@@ -117,7 +117,7 @@ type ClientV2 struct {
 
 var _ DelugeClient = &Client{}
 var _ DelugeClient = &ClientV2{}
-var _ DelugeClientV2 = &ClientV2{}
+var _ V2 = &ClientV2{}
 
 // SerialMismatchError is the error returned when server replied with an out-of-order response.
 type SerialMismatchError struct {
@@ -158,7 +158,7 @@ func newSafeConn(rawConn net.Conn, hostname string, readWriteTimeout time.Durati
 	return &sc
 }
 
-type rpcResponseTypeID int
+type rpcMessageType int
 
 // File is a Deluge torrent file.
 type File struct {
@@ -180,9 +180,9 @@ type Peer struct {
 }
 
 const (
-	rpcResponse rpcResponseTypeID = 1
-	rpcError    rpcResponseTypeID = 2
-	rpcEvent    rpcResponseTypeID = 3
+	rpcResponse rpcMessageType = 1
+	rpcError    rpcMessageType = 2
+	rpcEvent    rpcMessageType = 3
 )
 
 // RPCError is an error returned by RPC calls.
@@ -198,7 +198,7 @@ func (e RPCError) Error() string {
 
 // DelugeResponse is a response returned from a completed RPC call.
 type DelugeResponse struct {
-	messageType rpcResponseTypeID
+	messageType rpcMessageType
 	requestID   int64
 	// only for rpcResponse
 	returnValue rencode.List
@@ -416,17 +416,31 @@ func (c *Client) handleRPCResponse(d *rencode.Decoder, expectedSerial int64) (*D
 
 	var resp DelugeResponse
 	var mt int64
-	err = respList.Scan(&mt, &resp.requestID)
+
+	err = respList.Scan(&mt)
 	if err != nil {
 		return nil, err
 	}
+	respList.Shift(1)
+	resp.messageType = rpcMessageType(mt)
+	if resp.messageType == rpcEvent {
+		err = respList.Scan(&resp.eventName, &resp.data)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, errors.New("event support not available")
+	}
+
+	// start reading request ID (for both valid response or error)
+	err = respList.Scan(&resp.requestID)
+	if err != nil {
+		return nil, err
+	}
+	respList.Shift(1)
 	if resp.requestID != expectedSerial {
 		return nil, SerialMismatchError{expectedSerial, resp.requestID}
 	}
-	resp.messageType = rpcResponseTypeID(mt)
-
-	// shift first two elements which have already been read
-	respList = rencode.NewList(respList.Values()[2:]...)
 
 	switch resp.messageType {
 	case rpcResponse:
@@ -456,8 +470,6 @@ func (c *Client) handleRPCResponse(d *rencode.Decoder, expectedSerial int64) (*D
 				return nil, err
 			}
 		}
-	case rpcEvent:
-		return nil, errors.New("event support not available")
 	default:
 		return nil, errors.New("unknown message type")
 	}

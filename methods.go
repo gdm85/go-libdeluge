@@ -74,13 +74,12 @@ func (c *Client) AddTorrentMagnet(magnetURI string, options *Options) (string, e
 		return "", resp.RPCError
 	}
 
-	// returned hash may be nil if torrent was already added
+	// returned hash will be nil if torrent was already added
 	vals := resp.returnValue.Values()
 	if len(vals) == 0 {
 		return "", ErrInvalidReturnValue
 	}
 	torrentHash := vals[0]
-	//TODO: is this nil comparison valid?
 	if torrentHash == nil {
 		return "", nil
 	}
@@ -100,13 +99,12 @@ func (c *Client) AddTorrentURL(url string, options *Options) (string, error) {
 		return "", resp.RPCError
 	}
 
-	// returned hash may be nil if torrent was already added
+	// returned hash will be nil if torrent was already added
 	vals := resp.returnValue.Values()
 	if len(vals) == 0 {
 		return "", ErrInvalidReturnValue
 	}
 	torrentHash := vals[0]
-	//TODO: is this nil comparison valid?
 	if torrentHash == nil {
 		return "", nil
 	}
@@ -126,13 +124,12 @@ func (c *Client) AddTorrentFile(fileName, fileContentBase64 string, options *Opt
 		return "", resp.RPCError
 	}
 
-	// returned hash may be nil if torrent was already added
+	// returned hash will be nil if torrent was already added
 	vals := resp.returnValue.Values()
 	if len(vals) == 0 {
 		return "", ErrInvalidReturnValue
 	}
 	torrentHash := vals[0]
-	//TODO: is this nil comparison valid?
 	if torrentHash == nil {
 		return "", nil
 	}
@@ -182,7 +179,7 @@ func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, err
 
 	var torrentErrors []TorrentError
 
-	// Iterate through the list of errors that have occured, and
+	// Iterate through the list of errors that have occurred, and
 	// convert each of them into a more typesafe format.
 	for _, e := range failedList.Values() {
 		failedEntry, ok := e.(rencode.List)

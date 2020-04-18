@@ -25,23 +25,23 @@ import (
 // If a new field is added to this struct it should also be added to the statusKeys map.
 type TorrentStatus struct {
 	ActiveTime          int64
-	TimeAdded           float32 // most times an integer
 	CompletedTime       int64   `rencode:"v2only"`
+	TimeAdded           float32 // most times an integer
 	DistributedCopies   float32
-	DownloadLocation    string `rencode:"v2only"`
-	DownloadPayloadRate int64
 	ETA                 float32 // most times an integer
+	Progress            float32 // max is 100
+	Ratio               float32
 	IsFinished          bool
 	IsSeed              bool
+	Private             bool
+	DownloadLocation    string `rencode:"v2only"`
+	DownloadPayloadRate int64
 	Name                string
 	NextAnnounce        int64
 	NumPeers            int64
 	NumPieces           int64
 	NumSeeds            int64
 	PieceLength         int64
-	Private             bool
-	Progress            float32 // max is 100
-	Ratio               float32
 	SeedingTime         int64
 	State               string
 	TotalDone           int64

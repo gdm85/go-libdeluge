@@ -86,7 +86,7 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 	printServerResponse("GetEnabledPlugins", c)
 
 	if v2daemon {
-		deluge := deluge.(delugeclient.DelugeClientV2)
+		deluge := deluge.(delugeclient.V2)
 		_, err = deluge.KnownAccounts()
 		if err != nil {
 			return err

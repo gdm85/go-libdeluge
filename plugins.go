@@ -89,12 +89,12 @@ func (p LabelPlugin) RemoveLabel(label string) error {
 }
 
 // GetTorrentLabel returns the label of the specified torrent.
-func (c *LabelPlugin) GetTorrentLabel(hash string) (string, error) {
+func (p LabelPlugin) GetTorrentLabel(hash string) (string, error) {
 	var args rencode.List
 	args.Add(hash)
 	args.Add(rencode.NewList("label"))
 
-	rd, err := c.rpcWithDictionaryResult("core.get_torrent_status", args, rencode.Dictionary{})
+	rd, err := p.rpcWithDictionaryResult("core.get_torrent_status", args, rencode.Dictionary{})
 	if err != nil {
 		return "", err
 	}
@@ -111,7 +111,7 @@ func (c *LabelPlugin) GetTorrentLabel(hash string) (string, error) {
 }
 
 // GetTorrentsLabels filters torrents by state and/or IDs and returns their label.
-func (c *LabelPlugin) GetTorrentsLabels(state TorrentState, ids []string) (map[string]string, error) {
+func (p LabelPlugin) GetTorrentsLabels(state TorrentState, ids []string) (map[string]string, error) {
 	var args rencode.List
 	var filterDict rencode.Dictionary
 	if len(ids) != 0 {
@@ -123,7 +123,7 @@ func (c *LabelPlugin) GetTorrentsLabels(state TorrentState, ids []string) (map[s
 	args.Add(filterDict)
 	args.Add(rencode.NewList("label"))
 
-	rd, err := c.rpcWithDictionaryResult("core.get_torrents_status", args, rencode.Dictionary{})
+	rd, err := p.rpcWithDictionaryResult("core.get_torrents_status", args, rencode.Dictionary{})
 	if err != nil {
 		return nil, err
 	}
