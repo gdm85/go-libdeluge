@@ -1,3 +1,5 @@
+// +build integration
+
 // go-libdeluge v0.5.1 - a native deluge RPC client library
 // Copyright (C) 2015~2020 gdm85 - https://github.com/gdm85/go-libdeluge/
 // This program is free software; you can redistribute it and/or
@@ -17,9 +19,10 @@
 package main
 
 import (
-	"errors"
 	"fmt"
+	"log"
 	"os"
+	"testing"
 
 	delugeclient "github.com/gdm85/go-libdeluge"
 )
@@ -29,9 +32,31 @@ const (
 	testMagnetURI  = `magnet:?xt=urn:btih:c1939ca413b9afcc34ea0cf3c128574e93ff6cb0&tr=http%3A%2F%2Ftorrent.ubuntu.com%3A6969%2Fannounce`
 )
 
-func runAllIntegrationTests(settings delugeclient.Settings) error {
-	var deluge delugeclient.DelugeClient
-	var c *delugeclient.Client
+var (
+	deluge   delugeclient.DelugeClient
+	c        *delugeclient.Client
+	settings = delugeclient.Settings{
+		Hostname: "127.0.0.1",
+		Port:     58846,
+		Login:    "localclient",
+		Password: "deluge",
+	}
+)
+
+func TestMain(m *testing.M) {
+	err := prepareClient(settings)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	exitCode := m.Run()
+
+	deluge.Close()
+
+	os.Exit(exitCode)
+}
+
+func prepareClient(settings delugeclient.Settings) error {
 	settings.DebugServerResponses = true
 
 	if v2daemon {
@@ -46,66 +71,82 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 	// perform connection to Deluge server
 	err := deluge.Connect()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: connection failed: %v\n", err)
-		os.Exit(3)
+		return fmt.Errorf("connection failed: %w", err)
 	}
-	defer deluge.Close()
 	printServerResponse("DaemonLogin", c)
 
-	_, err = deluge.DaemonVersion()
+	return nil
+}
+
+func TestDaemonVersion(t *testing.T) {
+	_, err := deluge.DaemonVersion()
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 	printServerResponse("DaemonVersion", c)
+}
 
+func TestMethodsList(t *testing.T) {
 	methods, err := deluge.MethodsList()
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 	printServerResponse("MethodsList", c)
 	if len(methods) == 0 {
-		return errors.New("no methods returned")
+		t.Error("no methods returned")
 	}
+}
 
-	_, err = deluge.GetFreeSpace("")
+func TestFreeSpace(t *testing.T) {
+	_, err := deluge.GetFreeSpace("")
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 	printServerResponse("GetFreeSpace", c)
+}
 
-	_, err = deluge.GetAvailablePlugins()
+func TestGetAvailablePlugins(t *testing.T) {
+	_, err := deluge.GetAvailablePlugins()
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 	printServerResponse("GetAvailablePlugins", c)
+}
 
-	_, err = deluge.GetEnabledPlugins()
+func TestGetEnabledPlugins(t *testing.T) {
+	_, err := deluge.GetEnabledPlugins()
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 	printServerResponse("GetEnabledPlugins", c)
+}
 
-	if v2daemon {
-		deluge := deluge.(delugeclient.DelugeClientV2)
-		_, err = deluge.KnownAccounts()
-		if err != nil {
-			return err
-		}
-		printServerResponse("KnownAccounts", c)
-	}
-
+func TestAddTorrentMagnet(t *testing.T) {
 	torrentHash, err := deluge.AddTorrentMagnet(testMagnetURI, nil)
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 	printServerResponse("AddTorrentMagnet", c)
 	if torrentHash == "" {
-		return errors.New("torrent was not added")
+		t.Error("torrent was not added")
 	}
+}
 
+func TestAddTorrentFile(t *testing.T) {
+	torrentHash, err := deluge.AddTorrentFile("ubuntu-14.04.6-desktop-amd64.iso.torrent", ubuntu14TorrentBase64, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse("AddTorrentFile", c)
+	if torrentHash == "" {
+		t.Error("torrent was not added")
+	}
+}
+
+func TestTorrentsStatus(t *testing.T) {
 	torrents, err := deluge.TorrentsStatus(delugeclient.StateUnspecified, nil)
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 	printServerResponse("TorrentsStatus", c)
 
@@ -117,10 +158,8 @@ func runAllIntegrationTests(settings delugeclient.Settings) error {
 		}
 	}
 	if !found {
-		return errors.New("cannot find torrent")
+		t.Error("cannot find torrent")
 	}
-
-	return nil
 }
 
 func printServerResponse(methodName string, c *delugeclient.Client) {

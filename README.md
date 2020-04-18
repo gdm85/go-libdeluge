@@ -63,7 +63,7 @@ Both deluge v2.0+ and v1.3+ are supported with the two different constructors `N
 * [x] `daemon.get_method_list`
 * [ ] `daemon.get_version`
 * [ ] `daemon.shutdown`
-* [ ] `core.add_torrent_file`
+* [x] `core.add_torrent_file`
 * [ ] `core.add_torrent_file_async`
 * [ ] `core.add_torrent_files`
 * [x] `core.add_torrent_magnet`

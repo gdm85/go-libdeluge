@@ -32,7 +32,7 @@ func newMockClient(serial int64, payload string) DelugeClient {
 	return &c
 }
 
-func newMockClientV2(serial int64, payload string) DelugeClientV2 {
+func newMockClientV2(serial int64, payload string) V2 {
 	b, err := hex.DecodeString(payload)
 	if err != nil {
 		panic(err)

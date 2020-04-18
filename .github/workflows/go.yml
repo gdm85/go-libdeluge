@@ -18,7 +18,7 @@ jobs:
 
     - name: Linux build
       run: |
-        make
+        make all integration
         cp scripts/deluge-install.sh bin/
         cp scripts/deluge-integration.sh bin/
 
@@ -29,7 +29,7 @@ jobs:
         path: bin/
 
     - name: Windows build
-      run: make build-windows
+      run: make bin/delugecli-windows
 
     - name: Cache
       uses: actions/cache@v1.0.3

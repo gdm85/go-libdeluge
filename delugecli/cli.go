@@ -43,7 +43,6 @@ var (
 	removeLabel          string
 	listLabels           bool
 	v2daemon             bool
-	integrationTests     bool
 	free                 bool
 	testListenPort       bool
 
@@ -65,8 +64,6 @@ func init() {
 	fs.StringVar(&addURI, "add", "", "Add a torrent via magnet URI")
 
 	fs.BoolVar(&v2daemon, "v2", false, "Use protocol compatible with a v2 daemon")
-	fs.BoolVar(&integrationTests, "i", false, "Run integration tests")
-	fs.BoolVar(&integrationTests, "integration-tests", false, "Run integration tests")
 
 	fs.BoolVar(&listTorrents, "e", false, "List all torrents")
 	fs.BoolVar(&listTorrents, "list", false, "List all torrents")
@@ -135,16 +132,6 @@ func main() {
 		Password:             password,
 		Logger:               logger,
 		DebugServerResponses: debugIncoming}
-
-	if integrationTests {
-		err := runAllIntegrationTests(settings)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
-			os.Exit(4)
-		}
-		fmt.Fprintf(os.Stdout, "Integration tests succeeded\n")
-		return
-	}
 
 	deluge := delugeclient.NewV2(settings)
 

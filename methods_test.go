@@ -99,8 +99,7 @@ func TestKnownAccounts(t *testing.T) {
 }
 
 const (
-	testMagnetHash = "c1939ca413b9afcc34ea0cf3c128574e93ff6cb0"
-	testMagnetURI  = `magnet:?xt=urn:btih:c1939ca413b9afcc34ea0cf3c128574e93ff6cb0&tr=http%3A%2F%2Ftorrent.ubuntu.com%3A6969%2Fannounce`
+	testMagnetURI = `magnet:?xt=urn:btih:c1939ca413b9afcc34ea0cf3c128574e93ff6cb0&tr=http%3A%2F%2Ftorrent.ubuntu.com%3A6969%2Fannounce`
 )
 
 func TestAddTorrentMagnet(t *testing.T) {
