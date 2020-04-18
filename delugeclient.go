@@ -70,6 +70,7 @@ type DelugeClient interface {
 	GetLibtorrentVersion() (string, error)
 	AddTorrentMagnet(magnetURI string, options *Options) (string, error)
 	AddTorrentURL(url string, options *Options) (string, error)
+	AddTorrentFile(fileName, fileContentBase64 string, options *Options) (string, error)
 	RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, error)
 	RemoveTorrent(id string, rmFiles bool) (bool, error)
 	PauseTorrents(ids []string) error
