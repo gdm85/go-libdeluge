@@ -123,3 +123,14 @@ func TestTorrentsStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestAddTorrentFile(t *testing.T) {
+	t.Parallel()
+
+	c := newMockClientV2(7, "789C3BCCC8B1C224D1C03825D1D8D2DCD420D9242925C5202D3529C9CC2CC522C9D0D822393535D1D4D2D2382D3111002A7C0D50")
+
+	_, err := c.AddTorrentFile("ubuntu-14.04.6-desktop-amd64.iso.torrent", "base64 data", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
