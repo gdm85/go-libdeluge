@@ -163,7 +163,12 @@ func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, err
 	var args rencode.List
 	args.Add(sliceToRencodeList(ids), rmFiles)
 
-	resp, err := c.rpc("core.remove_torrents", args, rencode.Dictionary{})
+	rpcMethod := "core.remove_torrent"
+	if c.v2daemon {
+		rpcMethod = "core.remove_torrents"
+	}
+
+	resp, err := c.rpc(rpcMethod, args, rencode.Dictionary{})
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +216,14 @@ func (c *Client) RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, err
 // specified torrent.
 func (c *Client) RemoveTorrent(id string, rmFiles bool) (bool, error) {
 	var args rencode.List
-	args.Add(id, rmFiles)
+
+	// This is required due to the v1 daemon always taking a list of
+	// torrents to remove for core.remove_torrent
+	if c.v2daemon {
+		args.Add(id, rmFiles)
+	} else {
+		args.Add(sliceToRencodeList([]string{id}), rmFiles)
+	}
 
 	resp, err := c.rpc("core.remove_torrent", args, rencode.Dictionary{})
 	if err != nil {
@@ -235,7 +247,12 @@ func (c *Client) PauseTorrents(ids []string) error {
 	var args rencode.List
 	args.Add(sliceToRencodeList(ids))
 
-	resp, err := c.rpc("core.pause_torrents", args, rencode.Dictionary{})
+	rpcMethod := "core.pause_torrent"
+	if c.v2daemon {
+		rpcMethod = "core.pause_torrents"
+	}
+
+	resp, err := c.rpc(rpcMethod, args, rencode.Dictionary{})
 	if err != nil {
 		return err
 	}
@@ -249,7 +266,11 @@ func (c *Client) PauseTorrents(ids []string) error {
 // PauseTorrent pauses a single torrent with the given ID.
 func (c *Client) PauseTorrent(id string) error {
 	var args rencode.List
-	args.Add(id)
+	if c.v2daemon {
+		args.Add(id)
+	} else {
+		args.Add(sliceToRencodeList([]string{ids}))
+	}
 
 	resp, err := c.rpc("core.pause_torrent", args, rencode.Dictionary{})
 	if err != nil {
