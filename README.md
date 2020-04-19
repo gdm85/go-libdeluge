@@ -21,6 +21,7 @@ make
 The library by itself is a Go package and needs to be embedded in an UI or CLI application.
 
 ```go
+	// you can use NewV1 to create a client for Deluge v1.3
 	deluge := delugeclient.NewV2(delugeclient.Settings{
 		Hostname:              "localhost",
 		Port:                  58846,
