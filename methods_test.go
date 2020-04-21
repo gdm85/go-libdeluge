@@ -134,3 +134,36 @@ func TestAddTorrentFile(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestPauseTorrents(t *testing.T) {
+	t.Parallel()
+
+	c := newMockClientV2(8, "789C3BCCC8E90A00036A0113")
+
+	err := c.PauseTorrents("some-torrent-hash")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRemoveTorrent(t *testing.T) {
+	t.Parallel()
+
+	c := newMockClientV2(9, "789C3BCCC8E50C00036A0112")
+
+	_, err := c.RemoveTorrent("some-torrent-hash", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestResumeTorrents(t *testing.T) {
+	t.Parallel()
+
+	c := newMockClientV2(9, "789C3BCCC8E50A00036C0114")
+
+	err := c.ResumeTorrents("some-torrent-hash")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
