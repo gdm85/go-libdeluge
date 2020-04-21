@@ -23,5 +23,5 @@ func TestKnownAccounts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	printServerResponse("KnownAccounts", c)
+	printServerResponse(t, "KnownAccounts")
 }

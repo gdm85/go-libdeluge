@@ -73,7 +73,7 @@ func prepareClient(settings delugeclient.Settings) error {
 	if err != nil {
 		return fmt.Errorf("connection failed: %w", err)
 	}
-	printServerResponse("DaemonLogin", c)
+	printServerResponse(nil, "DaemonLogin")
 
 	return nil
 }
@@ -83,7 +83,7 @@ func TestDaemonVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	printServerResponse("DaemonVersion", c)
+	printServerResponse(t, "DaemonVersion")
 }
 
 func TestMethodsList(t *testing.T) {
@@ -91,7 +91,7 @@ func TestMethodsList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	printServerResponse("MethodsList", c)
+	printServerResponse(t, "MethodsList")
 	if len(methods) == 0 {
 		t.Error("no methods returned")
 	}
@@ -102,7 +102,7 @@ func TestFreeSpace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	printServerResponse("GetFreeSpace", c)
+	printServerResponse(t, "GetFreeSpace")
 }
 
 func TestGetAvailablePlugins(t *testing.T) {
@@ -110,7 +110,7 @@ func TestGetAvailablePlugins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	printServerResponse("GetAvailablePlugins", c)
+	printServerResponse(t, "GetAvailablePlugins")
 }
 
 func TestGetEnabledPlugins(t *testing.T) {
@@ -118,7 +118,7 @@ func TestGetEnabledPlugins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	printServerResponse("GetEnabledPlugins", c)
+	printServerResponse(t, "GetEnabledPlugins")
 }
 
 func TestAddTorrentMagnet(t *testing.T) {
@@ -126,20 +126,41 @@ func TestAddTorrentMagnet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	printServerResponse("AddTorrentMagnet", c)
+	printServerResponse(t, "AddTorrentMagnet")
 	if torrentHash == "" {
 		t.Error("torrent was not added")
 	}
 }
 
-func TestAddTorrentFile(t *testing.T) {
+func TestAddPauseAndRemoveTorrentFile(t *testing.T) {
 	torrentHash, err := deluge.AddTorrentFile("ubuntu-14.04.6-desktop-amd64.iso.torrent", ubuntu14TorrentBase64, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	printServerResponse("AddTorrentFile", c)
+	printServerResponse(t, "AddTorrentFile")
 	if torrentHash == "" {
-		t.Error("torrent was not added")
+		t.Fatal("torrent was not added")
+	}
+
+	err = deluge.PauseTorrents(torrentHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "PauseTorrents")
+
+	err = deluge.ResumeTorrents(torrentHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "ResumeTorrents")
+
+	success, err := deluge.RemoveTorrent(torrentHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "RemoveTorrent")
+	if !success {
+		t.Error("removal failed")
 	}
 }
 
@@ -148,7 +169,7 @@ func TestTorrentsStatus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	printServerResponse("TorrentsStatus", c)
+	printServerResponse(t, "TorrentsStatus")
 
 	found := false
 	for id := range torrents {
@@ -162,14 +183,16 @@ func TestTorrentsStatus(t *testing.T) {
 	}
 }
 
-func printServerResponse(methodName string, c *delugeclient.Client) {
+func printServerResponse(t *testing.T, methodName string) {
 	if len(c.DebugServerResponses) != 1 {
 		panic("BUG: expected exactly one response")
 	}
 
 	// store response for testing/development
 	buf := c.DebugServerResponses[0]
-	fmt.Printf("%s: received %d compressed bytes: %X\n", methodName, buf.Len(), buf.Bytes())
+	if t != nil {
+		t.Logf("%s: received %d compressed bytes: %X\n", methodName, buf.Len(), buf.Bytes())
+	}
 
 	c.DebugServerResponses = nil
 }
