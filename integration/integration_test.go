@@ -148,6 +148,12 @@ func TestAddPauseAndRemoveTorrentFile(t *testing.T) {
 	}
 	printServerResponse(t, "PauseTorrents")
 
+	err = deluge.ResumeTorrents(torrentHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "ResumeTorrents")
+
 	success, err := deluge.RemoveTorrent(torrentHash, false)
 	if err != nil {
 		t.Fatal(err)
