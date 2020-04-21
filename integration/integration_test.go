@@ -132,7 +132,7 @@ func TestAddTorrentMagnet(t *testing.T) {
 	}
 }
 
-func TestAddAndRemoveTorrentFile(t *testing.T) {
+func TestAddPauseAndRemoveTorrentFile(t *testing.T) {
 	torrentHash, err := deluge.AddTorrentFile("ubuntu-14.04.6-desktop-amd64.iso.torrent", ubuntu14TorrentBase64, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -142,11 +142,17 @@ func TestAddAndRemoveTorrentFile(t *testing.T) {
 		t.Fatal("torrent was not added")
 	}
 
+	err = deluge.PauseTorrents(torrentHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "PauseTorrents")
+
 	success, err := deluge.RemoveTorrent(torrentHash, false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	printServerResponse(t, "RemoveTorrentFile")
+	printServerResponse(t, "RemoveTorrent")
 	if !success {
 		t.Error("removal failed")
 	}
