@@ -46,6 +46,7 @@ const (
 )
 
 const (
+	// DefaultReadWriteTimeout is the default timeout for I/O operations with the Deluge server.
 	DefaultReadWriteTimeout = time.Second * 30
 )
 

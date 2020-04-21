@@ -18,6 +18,7 @@ import (
 	"github.com/gdm85/go-rencode"
 )
 
+// LabelPlugin exposes label plugin methods.
 type LabelPlugin struct {
 	*Client
 }
