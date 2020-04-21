@@ -231,27 +231,15 @@ func (c *Client) RemoveTorrent(id string, rmFiles bool) (bool, error) {
 }
 
 // PauseTorrents pauses a group of torrents with the given IDs.
-func (c *Client) PauseTorrents(ids []string) error {
+func (c *Client) PauseTorrents(ids ...string) error {
 	var args rencode.List
 	args.Add(sliceToRencodeList(ids))
 
-	resp, err := c.rpc("core.pause_torrents", args, rencode.Dictionary{})
-	if err != nil {
-		return err
+	method := "core.pause_torrents"
+	if !c.v2daemon {
+		method = "core.pause_torrent"
 	}
-	if resp.IsError() {
-		return resp.RPCError
-	}
-
-	return err
-}
-
-// PauseTorrent pauses a single torrent with the given ID.
-func (c *Client) PauseTorrent(id string) error {
-	var args rencode.List
-	args.Add(id)
-
-	resp, err := c.rpc("core.pause_torrent", args, rencode.Dictionary{})
+	resp, err := c.rpc(method, args, rencode.Dictionary{})
 	if err != nil {
 		return err
 	}
@@ -263,27 +251,15 @@ func (c *Client) PauseTorrent(id string) error {
 }
 
 // ResumeTorrents resumes a group of torrents with the given IDs.
-func (c *Client) ResumeTorrents(ids []string) error {
+func (c *Client) ResumeTorrents(ids ...string) error {
 	var args rencode.List
 	args.Add(sliceToRencodeList(ids))
 
-	resp, err := c.rpc("core.resume_torrents", args, rencode.Dictionary{})
-	if err != nil {
-		return err
+	method := "core.resume_torrents"
+	if !c.v2daemon {
+		method = "core.resume_torrent"
 	}
-	if resp.IsError() {
-		return resp.RPCError
-	}
-
-	return err
-}
-
-// ResumeTorrent resumes a single torrent with the given ID.
-func (c *Client) ResumeTorrent(id string) error {
-	var args rencode.List
-	args.Add(id)
-
-	resp, err := c.rpc("core.resume_torrent", args, rencode.Dictionary{})
+	resp, err := c.rpc(method, args, rencode.Dictionary{})
 	if err != nil {
 		return err
 	}
@@ -310,6 +286,7 @@ func (c *Client) MoveStorage(torrentIDs []string, dest string) error {
 	return err
 }
 
+// SessionState returns the current session state.
 func (c *Client) SessionState() ([]string, error) {
 	return c.rpcWithStringsResult("core.get_session_state")
 }

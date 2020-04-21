@@ -73,10 +73,8 @@ type DelugeClient interface {
 	AddTorrentFile(fileName, fileContentBase64 string, options *Options) (string, error)
 	RemoveTorrents(ids []string, rmFiles bool) ([]TorrentError, error)
 	RemoveTorrent(id string, rmFiles bool) (bool, error)
-	PauseTorrents(ids []string) error
-	PauseTorrent(id string) error
-	ResumeTorrents(ids []string) error
-	ResumeTorrent(id string) error
+	PauseTorrents(ids ...string) error
+	ResumeTorrents(ids ...string) error
 	TorrentsStatus(state TorrentState, ids []string) (map[string]*TorrentStatus, error)
 	TorrentStatus(id string) (*TorrentStatus, error)
 	MoveStorage(torrentIDs []string, dest string) error
