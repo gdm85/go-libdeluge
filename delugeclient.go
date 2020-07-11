@@ -282,6 +282,9 @@ func NewV2(s Settings) *ClientV2 {
 
 // Close closes the connection of a Deluge client.
 func (c *Client) Close() error {
+	if c.safeConn == nil {
+		return nil
+	}
 	return c.safeConn.Close()
 }
 
