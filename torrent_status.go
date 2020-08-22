@@ -42,6 +42,7 @@ type TorrentStatus struct {
 	NumPieces           int64
 	NumSeeds            int64
 	PieceLength         int64
+	SavePath            string
 	SeedingTime         int64
 	State               string
 	TotalDone           int64
@@ -109,6 +110,7 @@ var statusKeys = rencode.NewList(
 	"time_added",
 	"completed_time",    // v2-only
 	"download_location", // v2-only
+	"save_path",
 	"private")
 
 // TorrentStatus returns the status of the torrent with specified hash.
