@@ -1,5 +1,5 @@
 name: Go build and Deluge integration
-on: [push]
+on: [push, pull_request]
 jobs:
 
   build:
