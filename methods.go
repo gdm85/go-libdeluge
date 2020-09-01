@@ -481,7 +481,17 @@ func (c *Client) TestListenPort() (bool, error) {
 	if len(vals) == 0 {
 		return false, ErrInvalidReturnValue
 	}
-	success := vals[0]
+	first := vals[0]
 
-	return success.(bool), nil
+	v, ok := first.(bool)
+	if ok {
+		return v, nil
+	}
+
+	if c.settings.Logger != nil {
+		// sometimes a nil or rencode.List is returned, it is a bug in deluge
+		c.settings.Logger.Printf("TestListenPort returned %v", first)
+	}
+
+	return false, ErrInvalidReturnValue
 }

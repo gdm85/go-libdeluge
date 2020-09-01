@@ -1,13 +1,13 @@
 all: bin/delugecli test
 
+bin/delugecli:
+	go build -o $@ ./delugecli
+
 bin/delugecli-windows:
 	GOOS=windows GOARCH=amd64 go build -o $@ ./delugecli
 
 test: *.go
 	go test -v
-
-bin/delugecli:
-	go build -o $@ ./delugecli
 
 integration:
 	go test -v -tags=integration,integration_v1 -c ./integration -o bin/inttest1
