@@ -23,10 +23,12 @@ var testOpts Options
 func init() {
 	maxConns := 100
 	tVal := true
+	path := "some/path"
 	testOpts.MaxConnections = &maxConns
 	testOpts.AutoManaged = &tVal
 	testOpts.PreAllocateStorage = &tVal
 	testOpts.V2.Shared = &tVal
+	testOpts.DownloadLocation = &path
 }
 
 func TestNilOptionsEncode(t *testing.T) {
@@ -69,6 +71,10 @@ func TestOptionsEncodeV1(t *testing.T) {
 		t.Errorf("expected key %q not found", "compact_allocation")
 	}
 
+	if _, ok := m["save_path"]; !ok {
+		t.Errorf("expected key %q not found", "save_path")
+	}
+
 	if _, ok := m["shared"]; ok {
 		t.Errorf("unexpected key %q found", "shared")
 
@@ -97,6 +103,11 @@ func TestOptionsEncodeV2(t *testing.T) {
 
 	if _, ok := m["pre_allocate_storage"]; !ok {
 		t.Errorf("expected key %q not found", "pre_allocate_storage")
+
+	}
+
+	if _, ok := m["download_location"]; !ok {
+		t.Errorf("expected key %q not found", "download_location")
 
 	}
 

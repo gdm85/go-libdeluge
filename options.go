@@ -69,9 +69,13 @@ func (o *Options) toDictionary(v2daemon bool) rencode.Dictionary {
 		}
 
 		name := rencode.ToSnakeCase(t.Field(i).Name)
+
 		if !v2daemon {
+			// map some v1 fields to the corresponding v2 field
 			if name == "pre_allocate_storage" {
 				name = "compact_allocation"
+			} else if name == "download_location" {
+				name = "save_path"
 			}
 		}
 
