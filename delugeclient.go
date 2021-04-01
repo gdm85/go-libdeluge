@@ -87,6 +87,7 @@ type DelugeClient interface {
 	GetEnabledPlugins() ([]string, error)
 	TestListenPort() (bool, error)
 	GetListenPort() (uint16, error)
+	GetSessionStatus() (*SessionStatus, error)
 }
 
 // V2 is an interface for v2 Deluge clients.
