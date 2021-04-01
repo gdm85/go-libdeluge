@@ -42,6 +42,20 @@ func (c *Client) GetFreeSpace(path string) (int64, error) {
 	return freeSpace, nil
 }
 
+// GetListenPort return the listen port of daemon session
+func (c *Client) GetListenPort() (port uint16, err error) {
+	var resp *DelugeResponse
+	resp, err = c.rpc("core.get_listen_port", rencode.List{}, rencode.Dictionary{})
+	if err != nil {
+		return
+	}
+	if err != nil {
+		return 0, resp.RPCError
+	}
+	err = resp.returnValue.Scan(&port)
+	return
+}
+
 // GetLibtorrentVersion returns the libtorrent version.
 func (c *Client) GetLibtorrentVersion() (string, error) {
 	resp, err := c.rpc("core.get_libtorrent_version", rencode.List{}, rencode.Dictionary{})
