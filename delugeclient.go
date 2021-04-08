@@ -27,6 +27,7 @@ import (
 	"log"
 	"math"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/gdm85/go-rencode"
@@ -108,6 +109,7 @@ type Client struct {
 	classID      int64
 	v2daemon     bool
 	excludeV2tag string
+	mu           sync.Mutex
 
 	DebugServerResponses []*bytes.Buffer
 }
@@ -294,6 +296,9 @@ func (c *Client) Close() error {
 const Deluge2ProtocolVersion = 1
 
 func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictionary) (*DelugeResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	// generate serial
 	c.serial++
 	if c.serial == math.MaxInt64 {
