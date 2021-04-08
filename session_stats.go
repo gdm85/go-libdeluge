@@ -4,22 +4,20 @@ import (
 	"github.com/gdm85/go-rencode"
 )
 
-// SessionStats ...
+// SessionStats Basic session stats
 type SessionStats struct {
-	PayloadDownloadRate int64
-	PayloadUploadRate   int64
-	DownloadRate        int64
-	UploadRate          int64
-	TotalDownload       int64 // net.recv_bytes
-	TotalUpload         int64 // net.sent_bytes
-	// FreeSpace           int64
-	DhtNodes int16
-	NumPeers int16
-	// NumTorrents            int16
-	// NumPausedTorrents      int16
+	PayloadDownloadRate    int64
+	PayloadUploadRate      int64
+	DownloadRate           int64
+	UploadRate             int64
+	TotalDownload          int64
+	TotalUpload            int64
+	DhtNodes               int16
+	NumPeers               int16
 	HasIncomingConnections bool
 }
 
+// sessStatsKeys default keys of session stats, see "deluge/core/core.py"
 var sessStatsKeys = rencode.NewList(
 	"payload_download_rate",
 	"payload_upload_rate",
@@ -27,22 +25,15 @@ var sessStatsKeys = rencode.NewList(
 	"upload_rate",
 	"total_download",
 	"total_upload",
-	// "free_space",
 	"dht_nodes",
 	"num_peers",
-	// "num_torrents",
-	// "num_paused_torrents",
 	"has_incoming_connections",
 )
 
-// SessionStats ...
-func (c *Client) SessionStats(keys ...string) (*SessionStats, error) {
+// SessionStats Gets session status values as SessionStats object
+func (c *Client) SessionStats() (*SessionStats, error) {
 	var args rencode.List
-	if 0 == len(keys) {
-		args.Add(sessStatsKeys)
-	} else {
-		args.Add(rencode.NewList(keys))
-	}
+	args.Add(sessStatsKeys)
 
 	rd, err := c.rpcWithDictionaryResult("core.get_session_status", args, rencode.Dictionary{})
 	if err != nil {
@@ -50,7 +41,7 @@ func (c *Client) SessionStats(keys ...string) (*SessionStats, error) {
 	}
 
 	if c.settings.Logger != nil {
-		c.settings.Logger.Printf("got stats: %+s", rd)
+		c.settings.Logger.Printf("session stats: %+s", rd)
 	}
 	var data SessionStats
 	err = rd.ToStruct(&data, c.excludeV2tag)
