@@ -1,4 +1,4 @@
-module github.com/jerblack/go-libdeluge
+module github.com/gdm85/go-libdeluge
 
 go 1.16
 
