@@ -205,3 +205,15 @@ func printServerResponse(t *testing.T, methodName string) {
 
 	c.DebugServerResponses = nil
 }
+
+func TestGetListenPort(t *testing.T) {
+	port, err := deluge.GetListenPort()
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "GetListenPort")
+
+	if port == 0 {
+		t.Error("received invalid listen port (0)")
+	}
+}
