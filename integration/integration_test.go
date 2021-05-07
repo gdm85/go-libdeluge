@@ -121,7 +121,7 @@ func TestGetEnabledPlugins(t *testing.T) {
 	printServerResponse(t, "GetEnabledPlugins")
 }
 
-func TestAddTorrentMagnet(t *testing.T) {
+func TestAddMagnetAndCheckStatus(t *testing.T) {
 	torrentHash, err := deluge.AddTorrentMagnet(testMagnetURI, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -129,6 +129,34 @@ func TestAddTorrentMagnet(t *testing.T) {
 	printServerResponse(t, "AddTorrentMagnet")
 	if torrentHash == "" {
 		t.Error("torrent was not added")
+	}
+
+	torrents, err := deluge.TorrentsStatus(delugeclient.StateUnspecified, nil)
+	if err != nil {
+		t.Error(err)
+	} else {
+		printServerResponse(t, "TorrentsStatus")
+
+		found := false
+		for id := range torrents {
+			if id == testMagnetHash {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("cannot find torrent")
+		}
+	}
+
+	// this is here for cleanup purposes
+	success, err := deluge.RemoveTorrent(testMagnetHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "RemoveTorrent")
+	if !success {
+		t.Error("removal failed")
 	}
 }
 
@@ -164,25 +192,6 @@ func TestAddPauseAndRemoveTorrentFile(t *testing.T) {
 	}
 }
 
-func TestTorrentsStatus(t *testing.T) {
-	torrents, err := deluge.TorrentsStatus(delugeclient.StateUnspecified, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	printServerResponse(t, "TorrentsStatus")
-
-	found := false
-	for id := range torrents {
-		if id == testMagnetHash {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("cannot find torrent")
-	}
-}
-
 func printServerResponse(t *testing.T, methodName string) {
 	if len(c.DebugServerResponses) != 1 {
 		panic("BUG: expected exactly one response")
@@ -195,4 +204,16 @@ func printServerResponse(t *testing.T, methodName string) {
 	}
 
 	c.DebugServerResponses = nil
+}
+
+func TestGetListenPort(t *testing.T) {
+	port, err := deluge.GetListenPort()
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "GetListenPort")
+
+	if port == 0 {
+		t.Error("received invalid listen port (0)")
+	}
 }

@@ -167,3 +167,14 @@ func TestResumeTorrents(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestGetListenPort(t *testing.T) {
+	t.Parallel()
+
+	c := newMockClientV2(13, "789C3BCCC8E7C0C0F097030009BD0218")
+
+	_, err := c.GetListenPort()
+	if err != nil {
+		t.Fatal(err)
+	}
+}

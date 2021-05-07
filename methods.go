@@ -42,23 +42,6 @@ func (c *Client) GetFreeSpace(path string) (int64, error) {
 	return freeSpace, nil
 }
 
-// GetListenPort return the listen port of the deluge daemon
-func (c *Client) GetListenPort() (uint16, error) {
-	resp, err := c.rpc("core.get_listen_port", rencode.List{}, rencode.Dictionary{})
-	if err != nil {
-		return 0, err
-	}
-	if resp.IsError() {
-		return 0, resp.RPCError
-	}
-	var port uint16
-	err = resp.returnValue.Scan(&port)
-	if err != nil {
-		return 0, err
-	}
-	return port, nil
-}
-
 // GetLibtorrentVersion returns the libtorrent version.
 func (c *Client) GetLibtorrentVersion() (string, error) {
 	resp, err := c.rpc("core.get_libtorrent_version", rencode.List{}, rencode.Dictionary{})
@@ -511,4 +494,21 @@ func (c *Client) TestListenPort() (bool, error) {
 	}
 
 	return false, ErrInvalidReturnValue
+}
+
+// GetListenPort returns the listen port of the deluge daemon.
+func (c *Client) GetListenPort() (uint16, error) {
+	resp, err := c.rpc("core.get_listen_port", rencode.List{}, rencode.Dictionary{})
+	if err != nil {
+		return 0, err
+	}
+	if resp.IsError() {
+		return 0, resp.RPCError
+	}
+	var port int32
+	err = resp.returnValue.Scan(&port)
+	if err != nil {
+		return 0, err
+	}
+	return uint16(port), nil
 }
