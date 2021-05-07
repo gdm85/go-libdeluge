@@ -85,8 +85,9 @@ type DelugeClient interface {
 	ForceReannounce(ids []string) error
 	GetAvailablePlugins() ([]string, error)
 	GetEnabledPlugins() ([]string, error)
-	TestListenPort() (bool, error)
 	GetListenPort() (uint16, error)
+	TestListenPort() (bool, error)
+	SessionStats() (*SessionStats, error)
 }
 
 // V2 is an interface for v2 Deluge clients.
@@ -293,6 +294,7 @@ func (c *Client) Close() error {
 const Deluge2ProtocolVersion = 1
 
 func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictionary) (*DelugeResponse, error) {
+
 	// generate serial
 	c.serial++
 	if c.serial == math.MaxInt64 {

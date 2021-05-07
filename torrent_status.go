@@ -75,6 +75,11 @@ const (
 	StateMoving      TorrentState = "Moving"
 )
 
+// GetState return State string value as TorrentState type
+func (ts TorrentStatus) GetState() TorrentState {
+	return TorrentState(ts.State)
+}
+
 // each of the available fields in a torrent status
 // fields differ from v1/v2
 // See current list at https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L1033-L1143
