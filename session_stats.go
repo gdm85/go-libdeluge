@@ -4,7 +4,7 @@ import (
 	"github.com/gdm85/go-rencode"
 )
 
-// SessionStats Basic session stats
+// SessionStats contains basic session statistics.
 type SessionStats struct {
 	PayloadDownloadRate    int64
 	PayloadUploadRate      int64
@@ -17,7 +17,7 @@ type SessionStats struct {
 	HasIncomingConnections bool
 }
 
-// sessStatsKeys default keys of session stats, see "deluge/core/core.py"
+// sessStatsKeys is a slice with all the default keys for session stats.
 var sessStatsKeys = rencode.NewList(
 	"payload_download_rate",
 	"payload_upload_rate",
@@ -30,7 +30,7 @@ var sessStatsKeys = rencode.NewList(
 	"has_incoming_connections",
 )
 
-// SessionStats Gets session status values as SessionStats object
+// SessionStats retrieves session statistics from the session status.
 func (c *Client) SessionStats() (*SessionStats, error) {
 	var args rencode.List
 	args.Add(sessStatsKeys)

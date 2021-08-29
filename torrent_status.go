@@ -75,7 +75,7 @@ const (
 	StateMoving      TorrentState = "Moving"
 )
 
-// GetState return State string value as TorrentState type
+// GetState returns State string value as TorrentState type.
 func (ts TorrentStatus) GetState() TorrentState {
 	return TorrentState(ts.State)
 }

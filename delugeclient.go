@@ -294,7 +294,6 @@ func (c *Client) Close() error {
 const Deluge2ProtocolVersion = 1
 
 func (c *Client) rpc(methodName string, args rencode.List, kwargs rencode.Dictionary) (*DelugeResponse, error) {
-
 	// generate serial
 	c.serial++
 	if c.serial == math.MaxInt64 {
