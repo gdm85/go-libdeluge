@@ -45,6 +45,7 @@ var (
 	v2daemon             bool
 	free                 bool
 	testListenPort       bool
+	sessionStatus bool
 
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
 )
@@ -90,6 +91,8 @@ func init() {
 	fs.BoolVar(&testListenPort, "test-listen-port", false, "Test listen port")
 
 	fs.BoolVar(&listAccounts, "list-accounts", false, "List all known user accounts")
+	fs.BoolVar(&sessionStatus, "s", false, "Show session status")
+	fs.BoolVar(&sessionStatus, "session-status", false, "Show session status")
 }
 
 func main() {
@@ -306,5 +309,14 @@ func main() {
 			os.Exit(6)
 		}
 		fmt.Printf("test listen port: %v\n", success)
+	}
+
+	if sessionStatus {
+		status, err := deluge.GetSessionStatus()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: could not get session status: %v\n", err)
+			os.Exit(6)
+		}
+		fmt.Printf("session status: %+v\n", status)
 	}
 }
