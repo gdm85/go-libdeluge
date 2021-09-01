@@ -31,14 +31,6 @@ jobs:
     - name: Windows build
       run: make bin/delugecli-windows
 
-    - name: Cache
-      uses: actions/cache@v1.0.3
-      with:
-        # A directory to store and save the cache
-        path: ~/go/pkg/mod
-        # An explicit key for restoring and saving the cache
-        key: ${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-
   integration_v2:
     name: Deluge v2.0.3 integration test
     needs: build
