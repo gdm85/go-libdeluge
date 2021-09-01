@@ -88,11 +88,11 @@ Both deluge v2.0+ and v1.3+ are supported with the two different constructors `N
 * [x] `core.get_free_space`
 * [x] `core.get_known_accounts`
 * [x] `core.get_libtorrent_version`
-* [ ] `core.get_listen_port`
+* [x] `core.get_listen_port`
 * [ ] `core.get_path_size`
 * [ ] `core.get_proxy`
 * [x] `core.get_session_state`
-* [ ] `core.get_session_status`
+* [x] `core.get_session_status`
 * [x] `core.get_torrent_status`
 * [x] `core.get_torrents_status`
 * [ ] `core.glob`
