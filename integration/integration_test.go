@@ -217,3 +217,11 @@ func TestGetListenPort(t *testing.T) {
 		t.Error("received invalid listen port (0)")
 	}
 }
+
+func TestGetSessionStatus(t *testing.T) {
+	_, err := deluge.GetSessionStatus()
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "GetSessionStatus")
+}
