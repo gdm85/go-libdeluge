@@ -6,7 +6,7 @@ import (
 
 // SessionStatus contains basic session status and statistics.
 type SessionStatus struct {
-	HasIncomingConnections int8
+	HasIncomingConnections bool
 	UploadRate             float32
 	DownloadRate           float32
 	PayloadUploadRate      float32
