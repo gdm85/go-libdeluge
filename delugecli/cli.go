@@ -41,11 +41,12 @@ var (
 	setLabel             string
 	addLabel             string
 	removeLabel          string
+	getLabels            bool
 	listLabels           bool
 	v2daemon             bool
 	free                 bool
 	testListenPort       bool
-	sessionStatus bool
+	sessionStatus        bool
 
 	fs = flag.NewFlagSet("default", flag.ContinueOnError)
 )
@@ -81,6 +82,7 @@ func init() {
 	fs.StringVar(&addLabel, "c", "", "Add label on torrent")
 	fs.StringVar(&removeLabel, "remove-label", "", "Remove label on torrent")
 	fs.StringVar(&removeLabel, "r", "", "Remove label on torrent")
+	fs.BoolVar(&getLabels, "get-labels", false, "List all labels")
 	fs.BoolVar(&listLabels, "list-labels", false, "List all torrents' labels")
 	fs.BoolVar(&listLabels, "g", false, "List all torrents' labels")
 
@@ -253,6 +255,26 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: removing label %q: %v\n", addLabel, err)
 			os.Exit(5)
+		}
+	}
+
+	if getLabels {
+		p, err := deluge.LabelPlugin()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: label plugin: %v\n", err)
+			os.Exit(5)
+		}
+
+		labels, err := p.GetLabels()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: label plugin: %v\n", err)
+			os.Exit(5)
+		}
+
+		je := json.NewEncoder(os.Stdout)
+		je.SetIndent("", "\t")
+		if err := je.Encode(labels); err != nil {
+			os.Exit(7)
 		}
 	}
 
