@@ -458,7 +458,7 @@ func (c *Client) GetAvailablePlugins() ([]string, error) {
 	return c.rpcWithStringsResult("core.get_available_plugins")
 }
 
-// EnablePlugin enables a plugin with the given name.
+// EnablePlugin enables the plugin with the given name.
 func (c *Client) EnablePlugin(name string) error {
 	var args rencode.List
 	args.Add(name)
@@ -474,7 +474,7 @@ func (c *Client) EnablePlugin(name string) error {
 	return nil
 }
 
-// DisablePlugin disables a plugin with the given name.
+// DisablePlugin disables the plugin with the given name.
 func (c *Client) DisablePlugin(name string) error {
 	var args rencode.List
 	args.Add(name)
