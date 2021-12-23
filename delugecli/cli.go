@@ -36,6 +36,8 @@ var (
 	listTorrents         bool
 	listAvailablePlugins bool
 	listEnabledPlugins   bool
+	enablePlugin         string
+	disablePlugin        string
 	listAccounts         bool
 	torrentHash          string
 	setLabel             string
@@ -73,6 +75,8 @@ func init() {
 	fs.BoolVar(&listEnabledPlugins, "P", false, "List enabled plugins")
 	fs.BoolVar(&listAvailablePlugins, "list-available-plugins", false, "List available plugins")
 	fs.BoolVar(&listAvailablePlugins, "A", false, "List available plugins")
+	fs.StringVar(&enablePlugin, "enable-plugin", "", "Enable a plugin")
+	fs.StringVar(&disablePlugin, "disable-plugin", "", "Disable a plugin")
 
 	fs.StringVar(&torrentHash, "torrent", "", "Operate on specified torrent hash")
 	fs.StringVar(&torrentHash, "t", "", "Operate on specified torrent hash")
@@ -205,6 +209,22 @@ func main() {
 			os.Exit(5)
 		}
 		fmt.Println("enabled plugins:", plugins)
+	}
+
+	if enablePlugin != "" {
+		_, err := deluge.EnablePlugin(enablePlugin)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: enable plugin %s: %v\n", enablePlugin, err)
+			os.Exit(5)
+		}
+	}
+
+	if disablePlugin != "" {
+		_, err := deluge.DisablePlugin(disablePlugin)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: disable plugin %s: %v\n", disablePlugin, err)
+			os.Exit(5)
+		}
 	}
 
 	if setLabel != "" {
