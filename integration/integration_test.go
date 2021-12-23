@@ -122,7 +122,7 @@ func TestGetEnabledPlugins(t *testing.T) {
 }
 
 func TestEnablePlugin(t *testing.T) {
-	_, err := deluge.EnablePlugin("Label")
+	err := deluge.EnablePlugin("Label")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestEnablePlugin(t *testing.T) {
 }
 
 func TestDisablePlugin(t *testing.T) {
-	_, err := deluge.DisablePlugin("Label")
+	err := deluge.DisablePlugin("Label")
 	if err != nil {
 		t.Fatal(err)
 	}

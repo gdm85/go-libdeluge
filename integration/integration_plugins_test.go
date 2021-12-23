@@ -34,7 +34,7 @@ func waitForPluginEnabled(t *testing.T, name string) {
 }
 
 func testWithPlugin(t *testing.T, name string) func() {
-	_, err := deluge.EnablePlugin(name)
+	err := deluge.EnablePlugin(name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func testWithPlugin(t *testing.T, name string) func() {
 	waitForPluginEnabled(t, name)
 
 	return func() {
-		_, err := deluge.DisablePlugin(name)
+		err := deluge.DisablePlugin(name)
 		if err != nil {
 			t.Fatal(err)
 		}

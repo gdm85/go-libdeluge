@@ -85,8 +85,8 @@ type DelugeClient interface {
 	ForceReannounce(ids []string) error
 	GetAvailablePlugins() ([]string, error)
 	GetEnabledPlugins() ([]string, error)
-	EnablePlugin(name string) (bool, error)
-	DisablePlugin(name string) (bool, error)
+	EnablePlugin(name string) error
+	DisablePlugin(name string) error
 	TestListenPort() (bool, error)
 	GetListenPort() (uint16, error)
 	GetSessionStatus() (*SessionStatus, error)

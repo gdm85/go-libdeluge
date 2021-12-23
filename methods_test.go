@@ -90,30 +90,22 @@ func TestGetEnabledPlugins(t *testing.T) {
 func TestEnablePlugin(t *testing.T) {
 	t.Parallel()
 
-	c := newMockClient(7, "789C3BCCC8E10C0003660110")
+	c := newMockClientV2(7, "789C3BCCC8E10C0003660110")
 
-	ok, err := c.EnablePlugin("Label")
+	err := c.EnablePlugin("Label")
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	if ok != true {
-		t.Errorf("EnablePlugin expected %t; got %t", true, ok)
 	}
 }
 
 func TestDisablePlugin(t *testing.T) {
 	t.Parallel()
 
-	c := newMockClient(8, "789C3BCCC8E90C0003680111")
+	c := newMockClientV2(8, "789C3BCCC8E90C0003680111")
 
-	ok, err := c.EnablePlugin("Label")
+	err := c.DisablePlugin("Label")
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	if ok != true {
-		t.Errorf("DisablePlugin expected %t; got %t", true, ok)
 	}
 }
 

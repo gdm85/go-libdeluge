@@ -212,7 +212,7 @@ func main() {
 	}
 
 	if enablePlugin != "" {
-		_, err := deluge.EnablePlugin(enablePlugin)
+		err := deluge.EnablePlugin(enablePlugin)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: enable plugin %s: %v\n", enablePlugin, err)
 			os.Exit(5)
@@ -220,7 +220,7 @@ func main() {
 	}
 
 	if disablePlugin != "" {
-		_, err := deluge.DisablePlugin(disablePlugin)
+		err := deluge.DisablePlugin(disablePlugin)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: disable plugin %s: %v\n", disablePlugin, err)
 			os.Exit(5)
