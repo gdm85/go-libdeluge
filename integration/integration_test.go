@@ -209,12 +209,12 @@ func TestAddPauseAndRemoveTorrentFile(t *testing.T) {
 }
 
 func printServerResponse(t *testing.T, methodName string) {
-	if len(c.DebugServerResponses) != 1 {
-		panic("BUG: expected exactly one response")
+	if len(c.DebugServerResponses) == 0 {
+		panic("BUG: expected at least one response")
 	}
 
 	// store response for testing/development
-	buf := c.DebugServerResponses[0]
+	buf := c.DebugServerResponses[len(c.DebugServerResponses)-1]
 	if t != nil {
 		t.Logf("%s: received %d compressed bytes: %X\n", methodName, buf.Len(), buf.Bytes())
 	}
