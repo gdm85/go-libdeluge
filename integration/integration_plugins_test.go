@@ -5,13 +5,41 @@ package main
 import (
 	delugeclient "github.com/gdm85/go-libdeluge"
 	"testing"
+	"time"
 )
+
+func waitForPluginEnabled(t *testing.T, name string) {
+	tick := time.NewTicker(time.Millisecond * 500)
+	defer tick.Stop()
+
+	for attempt := 0; attempt < 10; attempt ++ {
+		t.Logf("Attempt %d waiting for plugin %s to become enabled", attempt + 1, name)
+
+		plugins, err := c.GetEnabledPlugins()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for _, p := range plugins {
+			if p == name {
+				return
+			}
+		}
+
+		// Sleep before trying again
+		<-tick.C
+	}
+
+	t.Fatalf("Timeout waiting for plugin %s to become enabled", name)
+}
 
 func testWithPlugin(t *testing.T, name string) func() {
 	_, err := deluge.EnablePlugin(name)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	waitForPluginEnabled(t, name)
 
 	return func() {
 		_, err := deluge.DisablePlugin(name)
