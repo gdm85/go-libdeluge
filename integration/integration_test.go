@@ -121,6 +121,22 @@ func TestGetEnabledPlugins(t *testing.T) {
 	printServerResponse(t, "GetEnabledPlugins")
 }
 
+func TestEnablePlugin(t *testing.T) {
+	_, err := deluge.EnablePlugin("Label")
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "EnablePlugin")
+}
+
+func TestDisablePlugin(t *testing.T) {
+	_, err := deluge.DisablePlugin("Label")
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "DisablePlugin")
+}
+
 func TestAddMagnetAndCheckStatus(t *testing.T) {
 	torrentHash, err := deluge.AddTorrentMagnet(testMagnetURI, nil)
 	if err != nil {

@@ -85,6 +85,8 @@ type DelugeClient interface {
 	ForceReannounce(ids []string) error
 	GetAvailablePlugins() ([]string, error)
 	GetEnabledPlugins() ([]string, error)
+	EnablePlugin(name string) (bool, error)
+	DisablePlugin(name string) (bool, error)
 	TestListenPort() (bool, error)
 	GetListenPort() (uint16, error)
 	GetSessionStatus() (*SessionStatus, error)
@@ -579,6 +581,36 @@ func (c *Client) rpcWithDictionaryResult(methodName string, args rencode.List, k
 	}
 
 	return rd, nil
+}
+
+// rpcWithBooleanResult calls an RPC method by name with the given arguments and expects a single boolean return value.
+// It returns ErrInvalidReturnValue if there are no return values, or if the first return value is not a bool.
+func (c *Client) rpcWithBooleanResult(methodName string, args rencode.List) (bool, error) {
+	resp, err := c.rpc(methodName, args, rencode.Dictionary{})
+	if err != nil {
+		return false, err
+	}
+	if resp.IsError() {
+		return false, resp.RPCError
+	}
+
+	vals := resp.returnValue.Values()
+	if len(vals) == 0 {
+		return false, ErrInvalidReturnValue
+	}
+	first := vals[0]
+
+	v, ok := first.(bool)
+	if ok {
+		return v, nil
+	}
+
+	if c.settings.Logger != nil {
+		// sometimes a nil or rencode.List is returned, it is a bug in deluge
+		c.settings.Logger.Printf("%s returned a non-boolean value %v", methodName, first)
+	}
+
+	return false, ErrInvalidReturnValue
 }
 
 // DaemonVersion returns the running daemon version.

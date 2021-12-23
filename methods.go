@@ -458,6 +458,24 @@ func (c *Client) GetAvailablePlugins() ([]string, error) {
 	return c.rpcWithStringsResult("core.get_available_plugins")
 }
 
+// EnablePlugin enables a plugin with the given name.
+// It returns true if the plugin was enabled.
+func (c *Client) EnablePlugin(name string) (bool, error) {
+	var args rencode.List
+	args.Add(name)
+
+	return c.rpcWithBooleanResult("core.enable_plugin", args)
+}
+
+// DisablePlugin disables a plugin with the given name.
+// It returns true if the plugin was disabled.
+func (c *Client) DisablePlugin(name string) (bool, error) {
+	var args rencode.List
+	args.Add(name)
+
+	return c.rpcWithBooleanResult("core.disable_plugin", args)
+}
+
 func sliceToRencodeList(s []string) rencode.List {
 	var list rencode.List
 	for _, v := range s {
@@ -469,31 +487,7 @@ func sliceToRencodeList(s []string) rencode.List {
 
 // TestListenPort checks if the active port is open.
 func (c *Client) TestListenPort() (bool, error) {
-	resp, err := c.rpc("core.test_listen_port", rencode.List{}, rencode.Dictionary{})
-	if err != nil {
-		return false, err
-	}
-	if resp.IsError() {
-		return false, resp.RPCError
-	}
-
-	vals := resp.returnValue.Values()
-	if len(vals) == 0 {
-		return false, ErrInvalidReturnValue
-	}
-	first := vals[0]
-
-	v, ok := first.(bool)
-	if ok {
-		return v, nil
-	}
-
-	if c.settings.Logger != nil {
-		// sometimes a nil or rencode.List is returned, it is a bug in deluge
-		c.settings.Logger.Printf("TestListenPort returned %v", first)
-	}
-
-	return false, ErrInvalidReturnValue
+	return c.rpcWithBooleanResult("core.test_listen_port", rencode.List{})
 }
 
 // GetListenPort returns the listen port of the deluge daemon.
