@@ -41,7 +41,7 @@ func (c *Client) LabelPlugin() (*LabelPlugin, error) {
 	return nil, nil
 }
 
-// GetLabels returns the current labels.
+// GetLabels returns a list of the available labels that can be assigned to torrents.
 func (p LabelPlugin) GetLabels() ([]string, error) {
 	return p.rpcWithStringsResult("label.get_labels")
 }
