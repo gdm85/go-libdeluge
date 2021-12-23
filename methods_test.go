@@ -113,7 +113,7 @@ func TestDisablePlugin(t *testing.T) {
 	}
 
 	if ok != true {
-		t.Errorf("EnablePlugin expected %t; got %t", true, ok)
+		t.Errorf("DisablePlugin expected %t; got %t", true, ok)
 	}
 }
 
