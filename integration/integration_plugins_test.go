@@ -9,12 +9,11 @@ import (
 )
 
 func waitForPluginEnabled(t *testing.T, name string) {
-	tick := time.NewTicker(time.Second)
+	tick := time.NewTicker(time.Millisecond * 500)
 	defer tick.Stop()
 
 	for attempt := 0; attempt < 10; attempt ++ {
 		// Sleep before testing enabled plugins.
-		// Even when Deluge reports a plugin is enabled, its RPC methods aren't yet available
 		<-tick.C
 
 		t.Logf("Attempt %d waiting for plugin %s to become enabled", attempt + 1, name)
@@ -54,7 +53,7 @@ func testWithPlugin(t *testing.T, name string) func() {
 }
 
 func TestLabelPluginGetLabels(t *testing.T) {
-	defer testWithPlugin(t, "Label")
+	defer testWithPlugin(t, "Label")()
 
 	var labelPlugin = &delugeclient.LabelPlugin{Client: c}
 
