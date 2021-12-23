@@ -267,7 +267,7 @@ func main() {
 
 		labels, err := p.GetLabels()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "ERROR: label plugin: %v\n", err)
+			fmt.Fprintf(os.Stderr, "ERROR: retrieving labels: %v\n", err)
 			os.Exit(5)
 		}
 
