@@ -87,6 +87,28 @@ func TestGetEnabledPlugins(t *testing.T) {
 	}
 }
 
+func TestEnablePlugin(t *testing.T) {
+	t.Parallel()
+
+	c := newMockClientV2(7, "789C3BCCC8E10C0003660110")
+
+	err := c.EnablePlugin("Label")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDisablePlugin(t *testing.T) {
+	t.Parallel()
+
+	c := newMockClientV2(8, "789C3BCCC8E90C0003680111")
+
+	err := c.DisablePlugin("Label")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestKnownAccounts(t *testing.T) {
 	t.Parallel()
 

@@ -458,6 +458,38 @@ func (c *Client) GetAvailablePlugins() ([]string, error) {
 	return c.rpcWithStringsResult("core.get_available_plugins")
 }
 
+// EnablePlugin enables the plugin with the given name.
+func (c *Client) EnablePlugin(name string) error {
+	var args rencode.List
+	args.Add(name)
+
+	resp, err := c.rpc("core.enable_plugin", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return nil
+}
+
+// DisablePlugin disables the plugin with the given name.
+func (c *Client) DisablePlugin(name string) error {
+	var args rencode.List
+	args.Add(name)
+
+	resp, err := c.rpc("core.disable_plugin", args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return nil
+}
+
 func sliceToRencodeList(s []string) rencode.List {
 	var list rencode.List
 	for _, v := range s {

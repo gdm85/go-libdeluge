@@ -72,8 +72,8 @@ Both deluge v2.0+ and v1.3+ are supported with the two different constructors `N
 * [ ] `core.connect_peer`
 * [x] `core.create_account`
 * [ ] `core.create_torrent`
-* [ ] `core.disable_plugin`
-* [ ] `core.enable_plugin`
+* [x] `core.disable_plugin`
+* [x] `core.enable_plugin`
 * [x] `core.force_reannounce`
 * [ ] `core.force_recheck`
 * [ ] `core.get_auth_levels_mappings`
@@ -146,7 +146,7 @@ Plugins can be used by calling the relative method and checking if the result is
 
 * [x] `label.add`
 * [ ] `label.get_config`
-* [ ] `label.get_labels`
+* [x] `label.get_labels`
 * [ ] `label.get_options`
 * [x] `label.remove`
 * [ ] `label.set_config`

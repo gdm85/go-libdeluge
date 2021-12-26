@@ -41,6 +41,11 @@ func (c *Client) LabelPlugin() (*LabelPlugin, error) {
 	return nil, nil
 }
 
+// GetLabels returns a list of the available labels that can be assigned to torrents.
+func (p LabelPlugin) GetLabels() ([]string, error) {
+	return p.rpcWithStringsResult("label.get_labels")
+}
+
 // SetTorrentLabel adds or replaces the label for the specified torrent.
 func (p LabelPlugin) SetTorrentLabel(hash, label string) error {
 	var args rencode.List
