@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package main
@@ -7,12 +8,13 @@ import (
 	"testing"
 )
 
-
 func enablePlugin(t *testing.T, name string) {
 	err := deluge.EnablePlugin(name)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	printServerResponse(t, "EnablePlugin")
 }
 
 func disablePlugin(t *testing.T, name string) {
@@ -21,8 +23,7 @@ func disablePlugin(t *testing.T, name string) {
 		t.Fatal(err)
 	}
 
-	// cleanup DebugServerResponses after plugin disable
-	c.DebugServerResponses = nil
+	printServerResponse(t, "DisablePlugin")
 }
 
 func TestLabelPluginGetLabels(t *testing.T) {

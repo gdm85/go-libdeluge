@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 // go-libdeluge v0.5.5 - a native deluge RPC client library
@@ -209,8 +210,8 @@ func TestAddPauseAndRemoveTorrentFile(t *testing.T) {
 }
 
 func printServerResponse(t *testing.T, methodName string) {
-	if len(c.DebugServerResponses) == 0 {
-		panic("BUG: expected at least one response")
+	if len(c.DebugServerResponses) != 1 {
+		panic("BUG: expected exactly one response")
 	}
 
 	// store response for testing/development

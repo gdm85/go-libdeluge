@@ -1,3 +1,4 @@
+//go:build integration && integration_v1 && !integration_v2
 // +build integration,integration_v1,!integration_v2
 
 package main

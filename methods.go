@@ -471,6 +471,8 @@ func (c *Client) EnablePlugin(name string) error {
 		return resp.RPCError
 	}
 
+	// deluge v2+ returns a boolean, but since it is not available in v1 it is ignored here
+
 	return nil
 }
 
@@ -486,6 +488,8 @@ func (c *Client) DisablePlugin(name string) error {
 	if resp.IsError() {
 		return resp.RPCError
 	}
+
+	// deluge v2+ returns a boolean, but since it is not available in v1 it is ignored here
 
 	return nil
 }
