@@ -11,8 +11,8 @@ type SessionStatus struct {
 	DownloadRate           float32
 	PayloadUploadRate      float32
 	PayloadDownloadRate    float32
-	TotalDownload          int32
-	TotalUpload            int32
+	TotalDownload          int64
+	TotalUpload            int64
 	NumPeers               int16
 	DhtNodes               int16
 }
