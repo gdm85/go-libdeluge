@@ -27,6 +27,7 @@ type TorrentStatus struct {
 	ActiveTime          int64
 	CompletedTime       int64   `rencode:"v2only"`
 	TimeAdded           float32 // most times an integer
+       LastSeenComplete    float32
 	DistributedCopies   float32
 	ETA                 float32 // most times an integer
 	Progress            float32 // max is 100
@@ -109,6 +110,7 @@ var statusKeys = rencode.NewList(
 	"time_added",
 	"completed_time",    // v2-only
 	"download_location", // v2-only
+       "last_seen_complete",
 	"private")
 
 // TorrentStatus returns the status of the torrent with specified hash.
