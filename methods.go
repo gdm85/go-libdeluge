@@ -270,6 +270,23 @@ func (c *Client) ResumeTorrents(ids ...string) error {
 	return err
 }
 
+// ForceRecheck forces a data recheck on the given IDs
+func (c *Client) ForceRecheck(ids ...string) error {
+	var args rencode.List
+	args.Add(sliceToRencodeList(ids))
+
+	method := "core.force_recheck"
+	resp, err := c.rpc(method, args, rencode.Dictionary{})
+	if err != nil {
+		return err
+	}
+	if resp.IsError() {
+		return resp.RPCError
+	}
+
+	return err
+}
+
 // MoveStorage will move the storage location of the group of torrents with the given IDs.
 func (c *Client) MoveStorage(torrentIDs []string, dest string) error {
 	var args rencode.List
