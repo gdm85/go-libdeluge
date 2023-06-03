@@ -248,3 +248,53 @@ func TestGetSessionStatus(t *testing.T) {
 	}
 	printServerResponse(t, "GetSessionStatus")
 }
+
+func TestAddMagnetAndCheckDownloadLocation(t *testing.T) {
+	path := "/tmp/"
+	opts := delugeclient.Options{
+		DownloadLocation: &path,
+	}
+	torrentHash, err := deluge.AddTorrentMagnet(testMagnetURI, &opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "AddTorrentMagnet")
+	if torrentHash == "" {
+		t.Error("torrent was not added")
+	}
+
+	torrents, err := deluge.TorrentsStatus(delugeclient.StateUnspecified, nil)
+	if err != nil {
+		t.Error(err)
+	} else {
+		printServerResponse(t, "TorrentsStatus")
+
+		found := false
+		for id, status := range torrents {
+			if id == testMagnetHash {
+				found = true
+
+				if status.DownloadLocation != path {
+					t.Errorf("expected download location to be %q, but found %q instead", path, status.DownloadLocation)
+				} else if status.DownloadLocation != status.SavePath {
+					t.Errorf("expected download location to be equal to save path, but found %q and %q instead", status.DownloadLocation, status.SavePath)
+				}
+
+				break
+			}
+		}
+		if !found {
+			t.Error("cannot find torrent")
+		}
+	}
+
+	// this is here for cleanup purposes
+	success, err := deluge.RemoveTorrent(testMagnetHash, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	printServerResponse(t, "RemoveTorrent")
+	if !success {
+		t.Error("removal failed")
+	}
+}
