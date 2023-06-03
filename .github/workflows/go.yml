@@ -4,7 +4,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
 
     - name: Set up Go
@@ -34,7 +34,7 @@ jobs:
   integration_v2:
     name: Deluge v2.0.3 integration test
     needs: build
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
 
     - name: Download Linux build
@@ -54,7 +54,7 @@ jobs:
   integration_v1:
     name: Deluge v1.3 integration test
     needs: build
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
 
     - name: Download Linux build
