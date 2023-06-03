@@ -23,14 +23,20 @@ set -e
 if [ "$1" = "--v2" ]; then
     export DEBIAN_FRONTEND="noninteractive"
 
+    apt-get install -qq -y gnupg
+
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C5E6A5ED249AD24C
-    sh -c 'echo "deb http://ppa.launchpad.net/deluge-team/stable/ubuntu bionic main" >> /etc/apt/sources.list.d/deluge.list'
+    echo "deb http://ppa.launchpad.net/deluge-team/stable/ubuntu bionic main" >> /etc/apt/sources.list.d/deluge.list
 
+    ## NOTE: geoip-database is optional
     apt-get update
+    apt-get install -qq -y deluged geoip-database
 
-    apt-get install -qq -y deluged
+    ## necessary due to a recent regression, see also: https://forum.deluge-torrent.org/viewtopic.php?p=235002#p235002
+    cd /usr/lib/python3/dist-packages
+    ln -s libtorrent.cpython-36dm-x86_64-linux-gnu.so libtorrent.so
 elif [ "$1" = "--v1" ]; then
-    apt-get install -qq python-libtorrent python-twisted-core python-openssl python-xdg
+    apt-get install -qq wget python-libtorrent python-twisted-core python-openssl python-xdg python-chardet geoip-database
     wget https://launchpad.net/ubuntu/+archive/primary/+files/deluge-common_1.3.15-2_all.deb https://launchpad.net/ubuntu/+archive/primary/+files/deluged_1.3.15-2_all.deb
     dpkg -i *.deb
     rm *.deb
