@@ -20,6 +20,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -45,6 +46,11 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	flag.Parse()
+	if testing.Verbose() {
+		settings.Logger = log.New(os.Stderr, "DELUGE: ", log.Lshortfile)
+	}
+
 	err := prepareClient(settings)
 	if err != nil {
 		log.Fatal(err)
@@ -211,7 +217,7 @@ func TestAddPauseAndRemoveTorrentFile(t *testing.T) {
 
 func printServerResponse(t *testing.T, methodName string) {
 	if len(c.DebugServerResponses) != 1 {
-		panic("BUG: expected exactly one response")
+		panic(fmt.Sprintf("BUG: expected exactly 1 response, but got %d", len(c.DebugServerResponses)))
 	}
 
 	// store response for testing/development
