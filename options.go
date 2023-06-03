@@ -29,8 +29,8 @@ type Options struct {
 	MaxUploadSpeed            *int
 	MaxDownloadSpeed          *int
 	PrioritizeFirstLastPieces *bool
-	PreAllocateStorage        *bool // compact_allocation for v1
-	DownloadLocation          *string
+	PreAllocateStorage        *bool   // v2-only but automatically converted to compact_allocation for v1
+	DownloadLocation          *string // works for both v1 and v2 when sending options
 	AutoManaged               *bool
 	StopAtRatio               *bool
 	StopRatio                 *float32
@@ -61,7 +61,7 @@ func (o *Options) toDictionary(v2daemon bool) rencode.Dictionary {
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Field(i)
 		if f.Kind() == reflect.Struct {
-			// there is a single struct field, V2, which is conditionally parsed after this loop
+			// there is a single struct fields, V2, which is conditionally parsed after this loop
 			continue
 		}
 		if f.IsNil() {
@@ -69,31 +69,28 @@ func (o *Options) toDictionary(v2daemon bool) rencode.Dictionary {
 		}
 
 		name := rencode.ToSnakeCase(t.Field(i).Name)
-
-		if !v2daemon {
-			// map some v1 fields to the corresponding v2 field
-			if name == "pre_allocate_storage" {
-				name = "compact_allocation"
-			} else if name == "download_location" {
-				name = "save_path"
-			}
+		if !v2daemon && name == "pre_allocate_storage" {
+			name = "compact_allocation"
 		}
 
 		dict.Add(name, reflect.Indirect(f).Interface())
 	}
 
-	if v2daemon {
-		v := reflect.ValueOf(o.V2)
-		t := reflect.TypeOf(o.V2)
-		for i := 0; i < v.NumField(); i++ {
-			f := v.Field(i)
-			if f.IsNil() {
-				continue
-			}
+	if !v2daemon {
+		return dict
+	}
 
-			name := rencode.ToSnakeCase(t.Field(i).Name)
-			dict.Add(name, reflect.Indirect(f).Interface())
+	// add the v2-only fields
+	v = reflect.ValueOf(o.V2)
+	t = v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		if f.IsNil() {
+			continue
 		}
+
+		name := rencode.ToSnakeCase(t.Field(i).Name)
+		dict.Add(name, reflect.Indirect(f).Interface())
 	}
 
 	return dict

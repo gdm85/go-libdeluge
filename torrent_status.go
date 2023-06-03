@@ -35,6 +35,7 @@ type TorrentStatus struct {
 	IsFinished          bool
 	IsSeed              bool
 	Private             bool
+	SavePath            string
 	DownloadLocation    string `rencode:"v2only"`
 	DownloadPayloadRate int64
 	Name                string
@@ -76,48 +77,59 @@ const (
 	StateMoving      TorrentState = "Moving"
 )
 
-// each of the available fields in a torrent status
-// fields differ from v1/v2
-// See current list at https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L1033-L1143
-var statusKeys = rencode.NewList(
-	"state",
-	"tracker_host",
-	"tracker_status",
-	"next_announce",
-	"name",
-	"total_size",
-	"progress",
-	"num_seeds",
-	"total_seeds",
-	"num_peers",
-	"total_peers",
-	"eta",
-	"download_payload_rate",
-	"upload_payload_rate",
-	"ratio",
-	"distributed_copies",
-	"num_pieces",
-	"piece_length",
-	"total_done",
-	"files",
-	"file_priorities",
-	"file_progress",
-	"peers",
-	"is_seed",
-	"is_finished",
-	"active_time",
-	"seeding_time",
-	"time_added",
-	"completed_time",     // v2-only
-	"download_location",  // v2-only
-	"last_seen_complete", // v2-only
-	"private")
+var (
+	// each of the available fields in a torrent status
+	// fields differ from v1/v2
+	// See current list at https://github.com/deluge-torrent/deluge/blob/deluge-2.0.3/deluge/core/torrent.py#L1033-L1143
+	commonStatusKeys = []interface{}{
+		"state",
+		"tracker_host",
+		"tracker_status",
+		"next_announce",
+		"name",
+		"total_size",
+		"progress",
+		"num_seeds",
+		"total_seeds",
+		"num_peers",
+		"total_peers",
+		"eta",
+		"download_payload_rate",
+		"upload_payload_rate",
+		"ratio",
+		"distributed_copies",
+		"num_pieces",
+		"piece_length",
+		"total_done",
+		"files",
+		"file_priorities",
+		"file_progress",
+		"peers",
+		"is_seed",
+		"is_finished",
+		"active_time",
+		"seeding_time",
+		"time_added",
+		"private",
+		"save_path", // supported by both v1 and v2
+	}
+	statusKeysV1 = rencode.NewList(commonStatusKeys...)
+	statusKeysV2 = rencode.NewList(append(commonStatusKeys[:],
+		"download_location",  // v2-only; v1 will not return it if queried to do so
+		"completed_time",     // v2-only
+		"last_seen_complete", // v2-only
+	)...)
+)
 
 // TorrentStatus returns the status of the torrent with specified hash.
 func (c *Client) TorrentStatus(hash string) (*TorrentStatus, error) {
 	var args rencode.List
 	args.Add(hash)
-	args.Add(statusKeys)
+	if !c.v2daemon {
+		args.Add(statusKeysV1)
+	} else {
+		args.Add(statusKeysV2)
+	}
 
 	rd, err := c.rpcWithDictionaryResult("core.get_torrent_status", args, rencode.Dictionary{})
 	if err != nil {
@@ -125,9 +137,15 @@ func (c *Client) TorrentStatus(hash string) (*TorrentStatus, error) {
 	}
 
 	var ts TorrentStatus
-	err = rd.ToStruct(&ts, c.excludeV2tag)
+	err = rd.ToStruct(&ts, c.excludeTag)
 	if err != nil {
 		return nil, err
+	}
+
+	// on v2 both fields SavePath and DownloadLocation are already set to the correct values
+	if !c.v2daemon {
+		// on v1 be forward-compatible with v2
+		ts.DownloadLocation = ts.SavePath
 	}
 
 	return &ts, nil
@@ -145,7 +163,11 @@ func (c *Client) TorrentsStatus(state TorrentState, hashes []string) (map[string
 		filterDict.Add("state", string(state))
 	}
 	args.Add(filterDict)
-	args.Add(statusKeys)
+	if !c.v2daemon {
+		args.Add(statusKeysV1)
+	} else {
+		args.Add(statusKeysV2)
+	}
 
 	rd, err := c.rpcWithDictionaryResult("core.get_torrents_status", args, rencode.Dictionary{})
 	if err != nil {
@@ -165,10 +187,17 @@ func (c *Client) TorrentsStatus(state TorrentState, hashes []string) (map[string
 		}
 
 		var ts TorrentStatus
-		err = v.ToStruct(&ts, c.excludeV2tag)
+		err = v.ToStruct(&ts, c.excludeTag)
 		if err != nil {
 			return nil, err
 		}
+
+		// on v2 both fields SavePath and DownloadLocation are already set to the correct values
+		if !c.v2daemon {
+			// on v1 be forward-compatible with v2
+			ts.DownloadLocation = ts.SavePath
+		}
+
 		result[k] = &ts
 	}
 

@@ -40,13 +40,13 @@ func (c *Client) GetSessionStatus() (*SessionStatus, error) {
 		return nil, err
 	}
 
-	if c.settings.Logger != nil {
-		c.settings.Logger.Printf("session status: %+s", rd)
-	}
 	var data SessionStatus
-	err = rd.ToStruct(&data, c.excludeV2tag)
+	err = rd.ToStruct(&data, c.excludeTag)
 	if err != nil {
 		return nil, err
+	}
+	if c.settings.Logger != nil {
+		c.settings.Logger.Printf("session status: %#v", data)
 	}
 
 	return &data, nil

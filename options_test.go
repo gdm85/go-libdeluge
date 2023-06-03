@@ -71,13 +71,16 @@ func TestOptionsEncodeV1(t *testing.T) {
 		t.Errorf("expected key %q not found", "compact_allocation")
 	}
 
-	if _, ok := m["save_path"]; !ok {
-		t.Errorf("expected key %q not found", "save_path")
+	if _, ok := m["download_location"]; !ok {
+		t.Errorf("expected key %q not found", "download_location")
+	}
+
+	if _, ok := m["save_path"]; ok {
+		t.Errorf("unexpected key %q found", "save_path")
 	}
 
 	if _, ok := m["shared"]; ok {
 		t.Errorf("unexpected key %q found", "shared")
-
 	}
 
 	// a field never specified should not be encoded
@@ -108,12 +111,14 @@ func TestOptionsEncodeV2(t *testing.T) {
 
 	if _, ok := m["download_location"]; !ok {
 		t.Errorf("expected key %q not found", "download_location")
+	}
 
+	if _, ok := m["save_path"]; ok {
+		t.Errorf("unexpected key %q found", "save_path")
 	}
 
 	if _, ok := m["shared"]; !ok {
 		t.Errorf("expected key %q not found", "shared")
-
 	}
 
 	// a field never specified should not be encoded

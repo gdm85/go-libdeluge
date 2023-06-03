@@ -104,12 +104,12 @@ type V2 interface {
 
 // Client is a Deluge RPC client.
 type Client struct {
-	settings     Settings
-	safeConn     io.ReadWriteCloser
-	serial       int64
-	classID      int64
-	v2daemon     bool
-	excludeV2tag string
+	settings   Settings
+	safeConn   io.ReadWriteCloser
+	serial     int64
+	classID    int64
+	v2daemon   bool
+	excludeTag string
 
 	DebugServerResponses []*bytes.Buffer
 }
@@ -266,8 +266,8 @@ func NewV1(s Settings) *Client {
 		s.ReadWriteTimeout = DefaultReadWriteTimeout
 	}
 	return &Client{
-		settings:     s,
-		excludeV2tag: "v2only",
+		settings:   s,
+		excludeTag: "v2only",
 	}
 }
 
